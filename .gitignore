@@ -1,0 +1,7 @@
+# Trazos Mágicos — gitignore
+node_modules/
+dist/
+.freebuff/
+*.local
+.DS_Store
+npm-debug.log*

@@ -1,0 +1,17 @@
+{
+  "name": "Trazos Mágicos",
+  "short_name": "Trazos",
+  "description": "Videojuego educativo de grafomotricidad, preescritura y escritura inicial para niños de 3 a 6 años",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#FFF8E7",
+  "theme_color": "#3E64FF",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
