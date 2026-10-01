@@ -3,6 +3,23 @@
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
 
+## [0.4.0] — 2026-10-01 · Voz infantil y pausada
+
+### Cambiado
+- **TTS más amable para peques**: ritmo bajado de 0.92× a **0.72×** y
+  timbre más agudo (pitch 1.12 → **1.3**), el estilo que mejor siguen
+  los niños de 3–6 años.
+- **Selección de voz preferente**: el proveedor puntúa las voces del
+  sistema y elige `es-ES`/`es-419` por delante del resto y, si existen,
+  voces con nombre "infantil" (niñ*, kid, child, junior, infantil).
+
+### Añadido
+- **Ajuste 🐢 "Voz pausada (para peques)"** en la puerta parental
+  (activado por defecto). Nuevo campo `Settings.voiceSlow` persistido
+  con merge compatible: instalaciones con ajustes antiguos heredan el
+  default pausado sin migración.
+- Test del default y del merge parcial de `voiceSlow`.
+
 ## [0.3.0] — 2026-10-01 · Despliegue en Docker
 
 ### Añadido

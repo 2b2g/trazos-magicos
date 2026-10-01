@@ -101,11 +101,16 @@ describe("storage", () => {
     var s = mod.loadSettings();
     expect(s.voice).toBe(true);
     expect(s.sfx).toBe(true);
+    expect(s.voiceSlow).toBe(true); // voz pausada por defecto (peques)
     expect(s.toleranceBoost).toBe(false);
-    mod.saveSettings({ voice: false, sfx: false, toleranceBoost: true });
+    mod.saveSettings({ voice: false, sfx: false, voiceSlow: true, toleranceBoost: true });
     var s2 = mod.loadSettings();
     expect(s2.voice).toBe(false);
     expect(s2.toleranceBoost).toBe(true);
+    // ajustes antiguos guardados sin voiceSlow: el default pausado se conserva
+    fake.setItem("tm.settings.v1", JSON.stringify({ voice: true, sfx: true, toleranceBoost: false }));
+    var s3 = mod.loadSettings();
+    expect(s3.voiceSlow).toBe(true);
   });
 
   it("sin localStorage disponible el juego sigue (sin persistir)", async () => {

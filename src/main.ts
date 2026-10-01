@@ -26,6 +26,7 @@ function boot(): void {
   var settings: Settings = loadSettings();
   audio.setVoiceEnabled(settings.voice);
   audio.setSfxEnabled(settings.sfx);
+  audio.setSlowVoice(settings.voiceSlow);
 
   var mapScreen: HTMLElement | null = null;
   var settingsScreen: HTMLElement | null = null;

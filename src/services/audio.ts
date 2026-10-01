@@ -13,6 +13,7 @@ class TtsProvider implements VoiceProvider {
   private synth: any = null;
   private voice: any = null;
   private enabled = true;
+  private slow = true; // voz pausada por defecto (para peques)
 
   constructor() {
     var s = (window as any).speechSynthesis;
@@ -30,15 +31,31 @@ class TtsProvider implements VoiceProvider {
     }
   }
 
+  /* Pistas de nombre para preferir voces "infantiles" si el sistema
+     las trae (algunos Android/Chrome incluyen voz de niño). */
+  private static CHILD_HINTS: string[] = ["niñ", "nino", "kid", "child", "junior", "infantil"];
+
   private pickVoice(): void {
     if (!this.synth) return;
     var voices = this.synth.getVoices ? this.synth.getVoices() : [];
     var best: any = null;
+    var bestScore = -1;
     for (var i = 0; i < voices.length; i++) {
-      var lang = voices[i].lang || "";
-      if (lang.toLowerCase().indexOf("es") === 0) {
-        best = voices[i];
-        if (lang.toLowerCase().indexOf("es-es") === 0 || lang.toLowerCase().indexOf("es_419") === 0) break;
+      var v = voices[i];
+      var lang = (v.lang || "").toLowerCase();
+      if (lang.indexOf("es") !== 0) continue;
+      var name = (v.name || "").toLowerCase();
+      var score = 1; // base: cualquier es-*
+      if (lang.indexOf("es-es") === 0 || lang.indexOf("es_419") === 0 || lang.indexOf("es-419") === 0) score += 2;
+      for (var h = 0; h < TtsProvider.CHILD_HINTS.length; h++) {
+        if (name.indexOf(TtsProvider.CHILD_HINTS[h]) >= 0) {
+          score += 4;
+          break;
+        }
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = v;
       }
     }
     this.voice = best;
@@ -53,6 +70,11 @@ class TtsProvider implements VoiceProvider {
     if (!on) this.cancel();
   }
 
+  /** Ritmo pausado on/off (ajuste 🐢 de la puerta parental). */
+  setSlow(on: boolean): void {
+    this.slow = on;
+  }
+
   speak(text: string): void {
     if (!this.enabled || !this.synth || !text) return;
     try {
@@ -60,8 +82,8 @@ class TtsProvider implements VoiceProvider {
       var u = new (window as any).SpeechSynthesisUtterance(text);
       u.lang = this.voice ? this.voice.lang : "es-ES";
       if (this.voice) u.voice = this.voice;
-      u.rate = 0.92; // más lento para pequeños
-      u.pitch = 1.12; // algo más agudo, amable
+      u.rate = this.slow ? 0.72 : 0.9; // pausado: los peques siguen la voz
+      u.pitch = this.slow ? 1.3 : 1.15; // timbre agudo y cálido, "infantil"
       u.volume = 1;
       this.synth.speak(u);
     } catch (e) {
@@ -179,6 +201,11 @@ export class AudioService {
 
   setVoiceEnabled(on: boolean): void {
     this.tts.setEnabled(on);
+  }
+
+  /** Voz pausada y aguda para peques (ajuste 🐢, activada por defecto). */
+  setSlowVoice(on: boolean): void {
+    this.tts.setSlow(on);
   }
 
   setSfxEnabled(on: boolean): void {

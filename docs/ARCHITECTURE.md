@@ -103,7 +103,10 @@ y superposición de demo. **DPR limitado a 1.5** (gama baja Android 5).
 
 ## 7. Audio (services/audio.ts)
 
-- **Voz**: `TtsProvider` (Web Speech API, voz `es-*`, rate 0.92, pitch 1.12).
+- **Voz**: `TtsProvider` (Web Speech API) con selección de voz
+  preferente: `es-ES`/`es-419` y nombres "infantiles" (niñ/kid/junior…)
+  puntúan más alto. Ritmo pausado (rate 0.72, pitch 1.3) activado por
+  defecto con ajuste 🐢; alternativo rate 0.9/pitch 1.15.
   Falta de TTS no bloquea nada (texto + iconos ya guían).
 - **Efectos**: osciladores WebAudio procedurales (`strokeDone`, `success`,
   `retry`, `tap`, `unlockPrize`) — sin ficheros: offline total y 0 KB extra.

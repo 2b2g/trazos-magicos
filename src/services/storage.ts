@@ -23,12 +23,14 @@ export interface Profile {
 export interface Settings {
   voice: boolean;
   sfx: boolean;
+  voiceSlow: boolean; // 🐢 voz pausada + timbre agudo (para peques)
   toleranceBoost: boolean; // modo accesible: corredor más ancho
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   voice: true,
   sfx: true,
+  voiceSlow: true,
   toleranceBoost: false,
 };
 

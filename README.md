@@ -104,7 +104,7 @@ docker compose up -d --build
 - [ ] Tablet Android gama baja: FPS de trazado aceptable (DPR 1.5 máx.)
 - [ ] Offline: abrir 2 veces, activar modo avión, recargar (service worker)
 - [ ] "Añadir a pantalla de inicio" (PWA fullscreen landscape)
-- [ ] Voz TTS: presente, a 0.92× velocidad; interruptor funciona
+- [ ] Voz TTS: presente, pausada y aguda (🐢 en ajustes); interruptor funciona
 - [ ] Rechazo de palma: apoyar la mano mientras se traza con un dedo
 - [ ] Puerta parental: toque rápido NO abre ajustes; 3 s sí
 - [ ] localStorage bloqueado (modo incógnito): el juego sigue funcionando sin guardar

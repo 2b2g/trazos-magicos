@@ -35,6 +35,9 @@ Cada niño tiene su perfil con su progreso; se crean los que hagan falta.
 Mantén pulsada la **🔑** 3 segundos para entrar. Ahí puedes:
 
 - **🔊 Voz**: instrucciones habladas on/off.
+- **🐢 Voz pausada**: ritmo lento y timbre agudo, pensado para que los
+  peques sigan la frase (activada por defecto). Desactívala si prefieres
+  una voz más natural para niños mayores.
 - **🎵 Efectos**: sonidos de acierto on/off.
 - **🫶 Modo extra fácil**: corredor de tolerancia más ancho y umbrales más
   amables — recomendado para los más pequeños o con motricidad dificultada.

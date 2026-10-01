@@ -58,6 +58,11 @@ export function renderSettings(
     audio.setVoiceEnabled(v);
     persist();
   });
+  var slowRow = row("🐢 Voz pausada (para peques)", s.voiceSlow, function (v) {
+    s.voiceSlow = v;
+    audio.setSlowVoice(v);
+    persist();
+  });
   var sfxRow = row("🎵 Efectos de sonido", s.sfx, function (v) {
     s.sfx = v;
     audio.setSfxEnabled(v);
@@ -120,6 +125,7 @@ export function renderSettings(
   });
 
   panel.appendChild(voiceRow.row);
+  panel.appendChild(slowRow.row);
   panel.appendChild(sfxRow.row);
   panel.appendChild(tolRow.row);
   panel.appendChild(deleteRow);
