@@ -10,7 +10,8 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 
 | Documento | Contenido |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitectura completa: motor, evaluación, entrada, audio, storage, contenido, compatibilidad |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitectura completa: motor, evaluación, entrada, audio, storage, contenido, compatibilidad, iconografía |
+| [docs/ATTRIBUTION.md](docs/ATTRIBUTION.md) | Créditos y licencias de los recursos de terceros (arte, tipografía) |
 | [docs/VOICE.md](docs/VOICE.md) | Voz pregrabada: servicios, costes, licencias y generación de los audios |
 | [docs/TESTING.md](docs/TESTING.md) | Estrategia de pruebas, batería E2E ejecutada y hallazgos corregidos |
 | [docs/MANUAL.md](docs/MANUAL.md) | Manual para adultos: perfiles, ajustes, pedagogía y problemas frecuentes |
@@ -24,7 +25,8 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 
 ```bash
 npm install
-npm run dev        # desarrollo → http://localhost:5173  npm test           # 89 tests unitarios (motor, storage, mascota, marca, voz, primer gesto, recompensa, fidelidad)
+npm run dev        # desarrollo → http://localhost:5173
+npm test           # 98 tests unitarios (motor, storage, mascota, marca, voz, primer gesto, recompensa, fidelidad, iconos)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
 ```
@@ -65,7 +67,8 @@ src/
 │   └── phrases.ts         catálogo de frases TTS en español
 │   └── brand.ts           identidad (nombre, mascota, lema) en un solo sitio
 ├── screens/           perfiles, mapa, actividad (bucle completo), ajustes
-├── ui/                Lapi la mascota (CSS con cara) y decoración del cielo
+├── ui/                Lapi la mascota (CSS con cara), decoración del cielo,
+│                      icons.ts (22 iconos SVG), artwork.ts (17 dibujos), mark.ts
 ├── services/          audio (TTS configurable + SFX WebAudio), storage multi-perfil
 ├── util/dom.ts        helpers DOM ES5 · util/fx.ts confeti y estrellas
 └── main.ts            orquestador + service worker
@@ -79,7 +82,7 @@ incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
 `presentación → demostración → trazado trazo a trazo → evaluación adaptativa → recompensa`
 
 - **Evaluación adaptativa**: si el niño falla, la tolerancia se relaja progresivamente (hasta +48 % de corredor, umbrales más bajos) y se desactivan las exigencias de inicio/dirección tras 2 intentos. Nunca hay castigo ni bloqueo.
-- **Recompensa con significado**: letras → emoji y palabra ("A de Avión", FDD §18); números → objetos contables con conteo hablado (FDD §23–25).
+- **Recompensa con significado**: letras → dibujo y palabra ("A de Avión", FDD §18); números → objetos contables con conteo hablado (FDD §23–25).
 - **Estrellas 1–3**, nunca 0 (FDD UX: sin fracaso).
 
 ### Añadir contenido nuevo
@@ -96,6 +99,13 @@ incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
   tabletas, también sin conexión; la voz del sistema queda como respaldo. Ver
   [docs/VOICE.md](docs/VOICE.md).
 - **Sin lectura**: instrucciones habladas (español) + botones-icónicos grandes.
+- **Iconos SVG, no emoji**: los botones y el HUD usan **22 iconos vectoriales
+  propios** (2,8 kB gzip, cero dependencias), porque en **Android 5** y
+  **Safari 9** la fuente de emoji no llega a Unicode 6 y todo emoji moderno
+  salía como un cuadro vacío. Los **17 dibujos** de contenido (avatares y
+  significados de letras) están igualmente vectorizados. La app no depende de
+  la tipografía del sistema para entenderse. Ver
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §13.1.
 - **Letras y números fieles al trazo**: las 27 mayúsculas y los 10 dígitos se
   construyen sobre una **caja de escritura común** (misma ceja, misma base) y
   llevan **pauta de 4 líneas** detrás, como el cuaderno de escritura infantil.
@@ -148,7 +158,9 @@ docker compose up -d --build
 - [ ] Puerta parental: toque rápido NO abre ajustes; 3 s sí
 - [ ] Tipografía: se ve Fredoka One (redondeada), no la fuente de respaldo
 - [ ] Botones: se hunden al pulsar; ningún toque cae en un botón contiguo
-- [ ] Silencio: el botón 🔊/🔇 del mapa y de la actividad funciona y se recuerda
+- [ ] **Iconos**: ningún botón ni píldora sale como cuadro vacío ni cambia de
+      dibujo entre tabletas (los avatares del perfil se ven iguales en todas)
+- [ ] Silencio: el botón de sonido del mapa y de la actividad funciona y se recuerda
 - [ ] Mascota: Lapi cambia de etapa al pasar de 5 y de 20 estrellas
 - [ ] localStorage bloqueado (modo incógnito): el juego sigue funcionando sin guardar
 

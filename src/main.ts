@@ -15,6 +15,7 @@ import {
 } from "./services/storage";
 import { ALL_RESOURCES } from "./content";
 import { BRAND } from "./content/brand";
+import { iconEl } from "./ui/mark";
 import { renderProfiles } from "./screens/profiles";
 import { renderMap } from "./screens/map";
 import { renderActivity } from "./screens/activity";
@@ -162,10 +163,11 @@ function boot(): void {
 
   // aviso amable en navegadores muy antiguos sin promesas (pre-Chromium 37)
   if (typeof (window as any).Promise === "undefined") {
-    var warn = el("div", {
-      class: "overlay",
-      text: "Tu navegador es muy antiguo. Actualiza el sistema para jugar mejor. 🌟",
-    });
+    var warn = el("div", { class: "overlay" });
+    warn.appendChild(iconEl("sparkles", "icon icon--warn"));
+    warn.appendChild(
+      el("span", { text: "Tu navegador es muy antiguo. Actualiza el sistema para jugar mejor." })
+    );
     app.appendChild(warn);
     setTimeout(function () {
       if (warn.parentElement) warn.parentElement.removeChild(warn);

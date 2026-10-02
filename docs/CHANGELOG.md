@@ -3,6 +3,116 @@
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
 
+## [0.9.0] — 2026-10-02 · Fuera los emoji: iconos SVG propios para todos los botones
+
+### Corregido
+- **Los botones se veían distinto en cada tableta, y en las antiguas se veían
+  como cajas vacías.** El chrome de la interfaz (botones, píldoras del HUD,
+  interruptores) se dibujaba con **emoji de texto**, que sale de la **fuente
+  del dispositivo**. En los objetivos del juego —**Android 5** (WebView
+  Chromium 37) y **Safari 9**— la fuente de emoji llega como mucho a
+  **Unicode 6** ([issuetracker 37057931][it55764]), así que **todo emoji de
+  U+1F900 en adelante sale como un cuadrado vacío**. La auditoría encontró
+  **151 apariciones de emoji en 97 líneas**: ~40 de *chrome* y ~111 de
+  *contenido*. Las 40 de chrome están ahora dibujadas como SVG.
+- **El significado de las letras y los avatares también se rompían**:
+  🦊 🐼 🐸 🦁 🐧 🦄 🐯 🐨 🪁 🧊 🥛 🤖 🦒 🧀 🦋 🧡 🦓 son de **Unicode 8.0 o
+  posterior**, es decir, de 2016 en adelante. Los **17** que aparecen en
+  pantallas reales (8 avatares + 6 significados de letras + 3 palabras
+  post-MVP) están ahora **dibujados como ilustración vectorial**, igual que el
+  resto de la fila. Los emoji antiguos (🍎 🐶 🐱 🐮 …) **se quedan**: su
+  fuente sí los tiene y no hay nada que ganar.
+
+### Añadido
+- **`src/ui/icons.ts` — 22 iconos de chrome** dibujados para el juego: `home`,
+  `gear`, `arrowLeft`, `arrowRight`, `refresh`, `plus`, `check`, `smile`, `key`,
+  `slow`, `soundOn`, `soundOff`, `star`, `starFilled`, `sparkles`, `lock`,
+  `sleep`, `mic`, `grown`, `heart`, `music`, `trash`. Cada icono es **dato**
+  (`IconShape[]` de `path`/`circle`/`rect`) sobre una rejilla de 24, con trazo
+  de 2,4 y remates redondos: el aire que necesita un botón que toca un niño
+  de 3 años. **7 kB / 2,8 kB gzip, cero dependencias**, y se construye con
+  `createElementNS` porque **Safari 9 ignora `innerHTML` en SVG**.
+- **`src/ui/artwork.ts` — 17 ilustraciones de contenido** (`{viewBox, paths}`),
+  generadas desde los SVG de **Fluent Emoji Flat** de Microsoft (**MIT**) con
+  `scripts/build-artwork.mjs`, que los descarga de Iconify y los cachea en
+  `.design/art-src/` para poder repetir la generación sin red. **31 kB /
+  9,2 kB gzip.**
+- **`src/ui/mark.ts` — la regla única de "una marca"**: `markEl(valor)` devuelve
+  el vector si hay ilustración y un `<span>` de texto si no; las pantallas ya no
+  deciden por su cuenta si va un emoji o un dibujo.
+- **`tests/icons.test.ts` — 6 tests** que blindan el sistema: cada icono tiene
+  geometría, `ICON_NAMES` está sincronizado con las claves, **no queda ningún
+  emoji en `btn__emoji` ni en `pill__icon`**, cada arte tiene caja y rutas, y
+  **todo emoji U+1F900+ de `src/` tiene ilustración** (si mañana alguien mete
+  un emoji nuevo, el test lo dice).
+- **`docs/ATTRIBUTION.md`**: créditos y licencias del arte, de la tipografía y
+  de la voz, con la comparativa de packs que justificó la elección.
+
+### Cambiado
+- **Los botones ya no llevan texto.** Solo el icono, con el nombre en el
+  `aria-label` (`.btn--only`): el niño no lee y lo que se toca es el dibujo.
+  Afecta a *Volver* (perfiles, actividad, recompensa), *¡Listo!* (perfiles),
+  *Repetir la actividad* y *Seguir jugando* (recompensa), la llave de los
+  ajustes, la casa, el sonido y la rueda de ajustes del mapa, y las pestañas de
+  fase del mapa, que ahora llevan **solo la marca** de la fase.
+- **Los interruptores de ajustes llevan icono delante** (`soundOn`, `slow`,
+  `music`, `heart`, `mic`, `trash`) y el título ya no muestra 👨.
+- **Las pestañas de fase y los nodos del mapa** usan marcas vectoriales; el
+  candado y el "dormido" (💤) también son SVG, y `setSound` vuelve a insertar
+  el nodo del sonido con su icono al cambiar.
+- **La recompensa** cuenta las estrellas con el icono `starFilled` y la
+  cantidad va en `.phrase--count`.
+- **El aviso de navegador antiguo** de `main.ts` lleva el icono `sparkles`.
+- **Coste**: el bundle moderno pasa de **64,89 kB / 23,28 kB gzip** a
+  **98,66 kB / 34,22 kB gzip** (+34 kB sin comprimir, +11 kB gzip) a cambio de
+  40 emoji que se veían de 40 maneras distintas. Los MP3 de la voz no cambian,
+  así que el service worker **se queda en `garabati-v6`** (los assets llevan
+  hash y no hay audio nuevo).
+- **`src/util/dom.ts`**: `children` acepta ya `SVGElement` junto a `HTMLElement`.
+
+### Corregido
+- **El generador de arte estaba destruyendo las ilustraciones.** Los animales
+  salían **rotos**: al zorro se le cortaban las orejas, a la jirafa la cabeza,
+  y el queso y la mariposa eran bloques sin cara. La causa no era el dibujo sino
+  `scripts/build-artwork.mjs`, que redondeaba la geometría con un `replace` de
+  números, y **en SVG eso no funciona**: dos números pueden ir pegados y el
+  parser decide dónde acaba uno. Dos fallos, ambos **sin error de consola**
+  (el navegador dibuja lo que puede y descarta el resto en silencio):
+  - **Los flags de arco no son medidas.** En `A rx ry rot large-arc sweep x y`
+    los dos flags se leen como un **único carácter** `0`/`1`; escritos `0.0`
+    son un token inválido y **descartan la ruta entera**. **91 de las 79 rutas**
+    quedaron rotas.
+  - **Los números necesitan separador.** `17.6` y `6.0` pegados son `17.66`:
+    otro número, y la figura se deforma.
+
+  Ahora el script tokeniza la ruta, cuenta la posición de cada argumento y
+  emite un **espacio explícito** entre números. Los tests nuevos de
+  `tests/icons.test.ts` lo blindan (flags sin decimales, números separados,
+  figuras que no se aplastan): **un `d` inválido no falla por ninguna otra vía**,
+  así que sin ellos el arte se degrada en silencio.
+
+### Decidido
+- **El arte de contenido viene de un pack descargable, no de un dibujo propio.**
+  Se compararon los packs libres que cubren los 17 dibujitos enteros, con los
+  SVG reales medidos y puestos uno al lado del otro en el navegador:
+
+  | Pack | Licencia | gzip de los 17 | Veredicto |
+  |---|---|---|---|
+  | **Fluent Emoji Flat** (Microsoft) | MIT, sin atribución | **11,4 kB** | **Elegido** |
+  | Noto Emoji (Google) | Apache 2.0, sin atribución | 29,5 kB | 2,6× más pesado |
+  | Twemoji (Twitter) | CC BY 4.0, atribución obligatoria | 13,8 kB | Más pesado y obliga a atribuir |
+
+  Fluent además usa **color plano sin gradientes ni filtros**, que es lo que
+  necesita `createElementNS`, y su estilo de pegatina encaja con la app.
+- **No se mete una librería de iconos.** Se miraron Phosphor, Tabler y Lucide:
+  para **22** pictogramas, el paquete con licencia Apache-2.0 son 100 kB–1 MB
+  y su trazo fino de 1,5–2 px no es el de la app (aquí va 2,4 con remates
+  redondos, pensado para dedos de 3 años). Afinados a mano: **2,8 kB gzip y
+  cero dependencias**, y el bundle sigue siendo un artefacto estático sin
+  arbor de `node_modules`. Detalle en `docs/ARCHITECTURE.md` §13.1.
+
+[it55764]: https://issuetracker.google.com/issues/37057931
+
 ## [0.8.1] — 2026-10-02 · Las pantallas ya hablan con la voz de Paulina y la recompensa cuenta con ella
 
 ### Corregido

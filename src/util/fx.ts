@@ -7,6 +7,7 @@
    cada logro termina en confeti, sonido alegre y baile de Lapi. */
 
 import { el } from "../util/dom";
+import { iconEl } from "../ui/icons";
 
 /** Colores del confeti: los mismos de la paleta (coherencia visual). */
 var CONFETTI_COLORS: string[] = [
@@ -48,13 +49,15 @@ export function confetti(host: HTMLElement, count?: number): void {
 /**
  * Fila de estrellas grandes que aparecen una a una (1–3), con el
  * sonido de acierto subiendo de tono: refuerzo inmediato y claro.
+ * La estrella es un icono del juego (`ui/icons.ts`), no un emoji: se ve
+ * igual en cualquier dispositivo.
  * @param stars número de estrellas ganadas (1–3)
  */
 export function starRow(host: HTMLElement, stars: number, stepMs?: number): HTMLElement {
   var step = stepMs === undefined ? 320 : stepMs;
   var row = el("div", { class: "stars-big" });
   for (var i = 0; i < stars; i++) {
-    var s = el("span", { text: "⭐" });
+    var s = el("span", { children: [iconEl("starFilled", "icon icon--gold")] });
     s.style.animationDelay = i * (step / 1000) + "s";
     row.appendChild(s);
   }

@@ -6,7 +6,9 @@ export interface ElProps {
   html?: string;
   attrs?: Record<string, string>;
   style?: Record<string, string>;
-  children?: HTMLElement[];
+  /** Nodos hijos. Acepta también `<svg>` (`ui/icons.ts`, `ui/artwork.ts`):
+      un icono no es un `HTMLElement`, pero sí un nodo que se puede insertar. */
+  children?: Array<HTMLElement | SVGElement>;
   onClick?: (e: Event) => void;
 }
 

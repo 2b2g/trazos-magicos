@@ -10,6 +10,7 @@ import { mascotEl } from "../ui/mascot";
 import { skyDeco } from "../ui/decor";
 import { confetti } from "../util/fx";
 import { BRAND } from "../content/brand";
+import { iconEl, markEl } from "../ui/mark";
 
 export interface ProfilesDeps {
   store: ProfileStore;
@@ -59,12 +60,17 @@ export function renderProfiles(
         class: "profile-card",
         attrs: { "aria-label": p.name },
         children: [
-          el("div", { class: "avatar", text: p.avatar }),
+          el("div", { class: "avatar", children: [markEl(p.avatar)] }),
           el("div", { class: "name", text: p.name }),
-          el("div", {
-            class: "stars-mini",
-            text: stars > 0 ? "⭐ " + stars : "✨ ¡Juega!",
-          }),
+          stars > 0
+            ? el("div", {
+                class: "stars-mini",
+                children: [iconEl("starFilled", "icon icon--gold"), el("span", { text: " " + stars })],
+              })
+            : el("div", {
+                class: "stars-mini",
+                children: [iconEl("sparkles"), el("span", { text: " ¡Juega!" })],
+              }),
         ],
         onClick: function () {
           audio.sfx.unlock();
@@ -80,7 +86,7 @@ export function renderProfiles(
       class: "profile-card profile-card--add",
       attrs: { "aria-label": "Nuevo jugador" },
       children: [
-        el("div", { class: "avatar", text: "➕" }),
+        el("div", { class: "avatar", children: [iconEl("plus")] }),
         el("div", { class: "name", text: "Nuevo" }),
       ],
       onClick: function () {
@@ -104,7 +110,7 @@ export function renderProfiles(
       var b = el("button", {
         class: "btn btn--white btn--icon avatar-pick" + (a === chosen ? " avatar-pick--on" : ""),
         attrs: { "aria-label": "Avatar " + a },
-        children: [el("span", { class: "btn__emoji", text: a })],
+        children: [markEl(a, "art art--avatar")],
         onClick: function () {
           chosen = a;
           audio.sfx.tap();
@@ -133,9 +139,9 @@ export function renderProfiles(
       class: "row",
       children: [
         el("button", {
-          class: "btn btn--coral",
+          class: "btn btn--coral btn--only",
           attrs: { "aria-label": "Volver" },
-          children: [el("span", { class: "btn__emoji", text: "⬅️" }), el("span", { text: "Volver" })],
+          children: [iconEl("arrowLeft")],
           onClick: function () {
             audio.sfx.tap();
             formWrap.classList.add("hidden");
@@ -143,9 +149,9 @@ export function renderProfiles(
           },
         }),
         el("button", {
-          class: "btn btn--green btn--big",
+          class: "btn btn--green btn--big btn--only",
           attrs: { "aria-label": "Listo" },
-          children: [el("span", { class: "btn__emoji", text: "😊" }), el("span", { text: "¡Listo!" })],
+          children: [iconEl("check")],
           onClick: function () {
             var name = ((input as HTMLInputElement).value || "Amigo").slice(0, 12);
             var p = deps.store.createProfile(name, chosen);

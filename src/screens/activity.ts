@@ -33,6 +33,7 @@ import { PHRASES, randomCheer, NUMBER_WORDS } from "../content/phrases";
 import { countPhrase, letterPhrase } from "../content/speech";
 import { mascotEl, setMascotMood, MascotMood } from "../ui/mascot";
 import { skyDeco } from "../ui/decor";
+import { iconEl, markEl } from "../ui/mark";
 import { confetti, starRow } from "../util/fx";
 
 export interface ActivityDeps {
@@ -58,7 +59,7 @@ export function renderActivity(
   var homeBtn = el("button", {
     class: "btn btn--coral btn--icon",
     attrs: { "aria-label": "Volver al mapa" },
-    children: [el("span", { class: "btn__emoji", text: "🏠" })],
+    children: [iconEl("home")],
     onClick: function () {
       audio.sfx.tap();
       cleanup();
@@ -71,7 +72,7 @@ export function renderActivity(
   var soundPill = el("button", {
     class: "pill pill--button pill--icon",
     attrs: { "aria-label": "Activar o silenciar el sonido" },
-    children: [el("span", { class: "pill__icon", text: deps.sound ? "🔊" : "🔇" })],
+    children: [iconEl(deps.sound ? "soundOn" : "soundOff", "pill__icon icon")],
     onClick: function () {
       var on = deps.onToggleSound();
       setSound(on);
@@ -81,7 +82,9 @@ export function renderActivity(
 
   /** Mantiene el icono de sonido sincronizado con el estado global. */
   function setSound(on: boolean): void {
-    (soundPill.firstChild as HTMLElement).textContent = on ? "🔊" : "🔇";
+    var viejo = soundPill.firstChild;
+    if (viejo && viejo.parentNode) viejo.parentNode.removeChild(viejo);
+    soundPill.insertBefore(iconEl(on ? "soundOn" : "soundOff", "pill__icon icon"), soundPill.firstChild);
   }
 
   var hud = el("div", {
@@ -476,7 +479,7 @@ export function renderActivity(
 
     // Letra → significado (FDD §18) / Número → cantidad (FDD §23–25)
     if (resource.kind === "letter" && resource.meaningEmoji) {
-      layer.appendChild(el("div", { class: "prize", text: resource.meaningEmoji }));
+      layer.appendChild(el("div", { class: "prize", children: [markEl(resource.meaningEmoji, "art art--prize")] }));
       layer.appendChild(
         el("div", { class: "phrase", text: resource.char + " de " + resource.meaningWord })
       );
@@ -485,8 +488,9 @@ export function renderActivity(
       var n = resource.count;
       var objs = el("div", { class: "count-objects" });
       for (var i = 0; i < n; i++) {
-        // ocultas de partida: cada una aparece cuando la voz la nombra
-        var sp = el("span", { class: "count-obj", text: resource.countEmoji as string });
+        // ocultas de partida: cada una aparece cuando la voz la nombra.
+        // La estrella es un icono del juego (mismo dibujo en todas partes).
+        var sp = el("span", { class: "count-obj", children: [iconEl("starFilled", "icon icon--gold")] });
         objs.appendChild(sp);
         objEls.push(sp);
       }
@@ -526,7 +530,12 @@ export function renderActivity(
         }
       }
       steps.push({ text: countPhrase(resource) });
-      layer.appendChild(el("div", { class: "phrase", text: words.length + " " + (resource.countEmoji || "") }));
+      layer.appendChild(
+        el("div", {
+          class: "phrase phrase--count",
+          children: [el("span", { text: words.length + " " }), iconEl("starFilled", "icon icon--gold")],
+        })
+      );
     }
 
     layer.appendChild(
@@ -534,9 +543,9 @@ export function renderActivity(
         class: "row",
         children: [
           el("button", {
-            class: "btn btn--orange",
+            class: "btn btn--orange btn--only",
             attrs: { "aria-label": "Repetir la actividad" },
-            children: [el("span", { class: "btn__emoji", text: "🔁" }), el("span", { text: "Otra vez" })],
+            children: [iconEl("refresh")],
             onClick: function () {
               audio.sfx.tap();
               cleanup();
@@ -544,9 +553,9 @@ export function renderActivity(
             },
           }),
           el("button", {
-            class: "btn btn--green",
+            class: "btn btn--green btn--only",
             attrs: { "aria-label": "Seguir jugando" },
-            children: [el("span", { class: "btn__emoji", text: "➡️" }), el("span", { text: "Seguir" })],
+            children: [iconEl("arrowRight")],
             onClick: function () {
               audio.sfx.tap();
               cleanup();

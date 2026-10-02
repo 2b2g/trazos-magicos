@@ -12,6 +12,7 @@ import { ResourceDef } from "../engine/types";
 import { PHRASES } from "../content/phrases";
 import { mascotEl } from "../ui/mascot";
 import { skyDeco } from "../ui/decor";
+import { iconEl, markEl } from "../ui/mark";
 
 export interface MapDeps {
   store: ProfileStore;
@@ -41,10 +42,7 @@ export function renderMap(
   var starTotal = el("div", {
     class: "pill pill--stars",
     attrs: { "aria-label": "Estrellas ganadas" },
-    children: [
-      el("span", { class: "pill__icon", text: "⭐" }),
-      el("span", { text: "0" }),
-    ],
+    children: [iconEl("starFilled", "pill__icon icon icon--gold"), el("span", { text: "0" })],
   });
   var starCount = starTotal.children[1] as HTMLElement;
 
@@ -56,7 +54,7 @@ export function renderMap(
   var soundPill = el("button", {
     class: "pill pill--button pill--icon",
     attrs: { "aria-label": "Activar o silenciar el sonido" },
-    children: [el("span", { class: "pill__icon", text: deps.sound ? "🔊" : "🔇" })],
+    children: [iconEl(deps.sound ? "soundOn" : "soundOff", "pill__icon icon")],
     onClick: function () {
       var on = deps.onToggleSound();
       setSound(on);
@@ -66,19 +64,18 @@ export function renderMap(
 
   /** Mantiene el icono de sonido sincronizado con el estado global. */
   function setSound(on: boolean): void {
-    (soundPill.firstChild as HTMLElement).textContent = on ? "🔊" : "🔇";
+    var viejo = soundPill.firstChild;
+    if (viejo && viejo.parentNode) viejo.parentNode.removeChild(viejo);
+    soundPill.insertBefore(iconEl(on ? "soundOn" : "soundOff", "pill__icon icon"), soundPill.firstChild);
   }
 
-  // --- botones de fase (pestañas grandes, con emoji)
+  // --- botones de fase (pestañas grandes, solo su marca)
   var phaseBtns: Record<string, HTMLElement> = {};
   PHASES.forEach(function (ph) {
     var b = el("button", {
-      class: "btn btn--sm btn--white",
+      class: "btn btn--sm btn--white btn--only",
       attrs: { "aria-label": ph.name },
-      children: [
-        el("span", { class: "btn__emoji", text: ph.emoji }),
-        el("span", { text: ph.name }),
-      ],
+      children: [markEl(ph.emoji, "art art--tab")],
       onClick: function () {
         audio.sfx.tap();
         currentPhase = ph.id;
@@ -141,24 +138,27 @@ export function renderMap(
       else if (i === currentIdx) cls += " node--current";
 
       var glyph = r.char || r.label;
-      var starRow = el("div", {
-        class: "node__stars",
-        text: !canPlay
-          ? "💤"
-          : stars === 3
-          ? "⭐⭐⭐"
-          : stars === 2
-          ? "⭐⭐"
-          : stars === 1
-          ? "⭐"
-          : "✨",
-      });
+      // Las marcas de progreso son iconos del juego (no emoji del
+      // sistema): estrellas doradas, candado o "aún no empieza".
+      var starRow = el("div", { class: "node__stars" });
+      if (!canPlay) {
+        starRow.appendChild(iconEl("sleep"));
+      } else {
+        for (var s = 0; s < stars; s++) {
+          starRow.appendChild(iconEl("starFilled", "icon icon--gold"));
+        }
+        if (!stars) starRow.appendChild(iconEl("sparkles"));
+      }
 
       var node = el("div", {
         class: cls,
         attrs: { "aria-label": (canPlay ? "Jugar: " : "Bloqueado: ") + r.label },
       });
-      node.appendChild(el("div", { text: !canPlay ? "🔒" : glyph }));
+      node.appendChild(
+        canPlay
+          ? el("div", { children: [markEl(glyph, "art art--glyph")] })
+          : el("div", { children: [iconEl("lock", "icon icon--lock")] })
+      );
       node.appendChild(starRow);
       node.addEventListener("click", function () {
         if (!canPlay) {
@@ -180,7 +180,7 @@ export function renderMap(
   var exitBtn = el("button", {
     class: "btn btn--coral btn--icon",
     attrs: { "aria-label": "Volver a elegir jugador" },
-    children: [el("span", { class: "btn__emoji", text: "🏠" })],
+    children: [iconEl("home")],
     onClick: function () {
       audio.sfx.tap();
       deps.onExit();
@@ -190,7 +190,7 @@ export function renderMap(
   var settingsBtn = el("button", {
     class: "btn btn--white btn--icon",
     attrs: { "aria-label": "Ajustes (zona de adultos)" },
-    children: [el("span", { class: "btn__emoji", text: "⚙️" })],
+    children: [iconEl("gear")],
     onClick: function () {
       audio.sfx.tap();
       deps.onSettings();

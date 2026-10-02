@@ -362,6 +362,98 @@ invierte (verde = avanzar, coral = atrás).
 - Sin publicidad, sin compras, sin dark patterns; el único control de
   adultos está tras la puerta de 3 s.
 
+### 13.1 Iconografía: emoji fuera del chrome (0.9.0)
+
+Hasta 0.8.1 los botones, las píldoras del HUD y los interruptores se dibujaban
+con **emoji de texto**. El emoji se ve como lo pinte la **fuente del
+dispositivo**, y en los objetivos del juego eso significa *cajas vacías*:
+
+- **Android 5** (WebView Chromium 37) llega a **Unicode 6**; su WebView no trae
+  los emoji de **Unicode 7/8/9** ([issuetracker 37057931][it55764]). Todo
+  **U+1F900 en adelante** sale como **cuadro vacío**.
+- **Safari 9 / iOS 9** se quedó en el set de emoji de 2015.
+
+De las 151 apariciones de emoji que había en `src/`, **40 eran chrome**
+(botones, píldoras, HUD) y **111 eran contenido** (el significado de cada
+letra, los avatares, los objetos que se cuentan). La regla que se aplicó:
+
+| Dónde | Qué es | Antes | Ahora |
+|---|---|---|---|
+| Chrome | botón, píldora del HUD, interruptor | emoji | **SVG** de `ui/icons.ts` |
+| Contenido | "A de Avión", avatares, objetos contables | emoji | ilustración SVG de `ui/artwork.ts` |
+| Contenido antiguo | 🍎 🐶 🐱 🐮 … (Unicode ≤ 6) | emoji | **se queda**: la fuente sí lo tiene y no hay ganancia |
+
+Los botones de chrome **no llevan texto**: solo el icono, con el nombre en el
+`aria-label` (`.btn--only`). El niño no lee, el botón se toca.
+
+#### Módulos
+
+| Pieza | Qué hace |
+|---|---|
+| `ui/icons.ts` | **22 iconos** de chrome como **datos** (`IconShape[]` de `path`/`circle`/`rect`), rejilla de 24, trazo 2.4 con remates redondos. `iconEl(name, class)` construye el `<svg>` con `createElementNS`. **7 kB / 2,8 kB gzip, 0 dependencias.** |
+| `ui/artwork.ts` | **17 ilustraciones** de contenido con `{viewBox, paths:[{fill, d}]}`, generadas desde los SVG de **Fluent Emoji Flat** (Microsoft, MIT) por `scripts/build-artwork.mjs`. **31 kB / 9,2 kB gzip.** |
+| `ui/mark.ts` | La regla única de "una marca": `markEl(valor)` devuelve el vector si hay arte y un `<span>` de texto si no. `isVectorArt()` para consultar el modo. |
+
+#### Por qué **no** una librería de iconos
+
+Se miraron Phosphor, Tabler y Lucide (las tres más «libres» de ese estilo) y
+se descartaron por peso y por estética:
+
+- El juego usa **22 pictogramas**. Un paquete con licencia Apache-2.0 y
+  `node_modules` son 100 kB–1 MB; afinando 22 formas a mano sale en 2,8 kB.
+- El estilo del juego es de **trazo grueso con remates redondos**; las tres
+  librerías usan trazo fino (1,5–2 px) optimizado para 16 px. Engordarlo
+  hasta 2,4 con remates redondos es reescribir la geometría de todos modos.
+- Sin dependencia nueva, el bundle sigue siendo **cero dependencias en
+  runtime** y el SVG escala a cualquier tamaño sin reescalar nada.
+
+#### Restricciones heredadas de §10
+
+Los nodos se crean con **`createElementNS`** y cada trazo se escribe como
+dato: **nada de `innerHTML` en SVG** (Safari 9 lo ignora en silêncio), nada de
+`var()`, CSS Grid ni flex `gap`. Los SVG son `aria-hidden="true"`
+decorativos: lo que se lee sigue siendo el `aria-label` del botón. El coste
+del cambio es **+34 kB sin comprimir / +11 kB gzip** en el bundle moderno
+(98,66 kB / 34,22 kB gzip, antes 64,89 / 23,28); los MP3 de la voz no cambian,
+así que el service worker se queda en `garabati-v6` (los assets llevan hash).
+
+`tests/icons.test.ts` (9 tests) blinda el sistema: geometría presente en cada
+icono, `ICON_NAMES` sincronizado con las claves, **cero emoji en
+`btn__emoji`/`pill__icon`**, caja y rutas en cada arte, **flags de arco sin
+decimales**, **números separados** y **figuras que no se aplastan**, y **todo
+emoji U+1F900+ de `src/` con ilustración**.
+
+#### Licencia del arte
+
+Las ilustraciones de `artwork.ts` derivan de **Fluent Emoji Flat** de Microsoft
+(**MIT**: uso libre, sin obligación de atribución). Se eligió este pack sobre
+Noto (Apache 2.0, pero **29,5 kB gzip** para los mismos 17 dibujitos) y sobre
+Twemoji (**CC BY 4.0**, que obliga a atribuir y además pesaba más). Los **22
+iconos de chrome son propios**. Detalle en `docs/ATTRIBUTION.md`.
+
+#### El redondeo de la geometría daña los dibujos en silencio
+
+`scripts/build-artwork.mjs` redondea la geometría a un decimal para ahorrar
+gzip, y **no se puede hacer con un `replace` de números**, porque en SVG dos
+números pueden ir pegados y el parser decide dónde acaba uno y empieza el otro.
+Dos fallos reales, los dos **sin error de consola** — el navegador dibuja lo que
+puede y descarta el resto:
+
+1. **Los flags de arco no son medidas.** En `A rx ry rot large-arc sweep x y` los
+   dos flags se leen como un **único carácter** `0`/`1`. Escribirlos `0.0` hace
+   el token inválido y **descarta la ruta entera**. Con el redondeo ingenuo,
+   **91 de las 79 rutas** quedaban rotas y los animales se veían como trozos
+   sueltos (solo el zorro sin orejas).
+2. **Los números necesitan separador.** `17.6` y `6.0` escritos pegados son
+   `17.66`: un número distinto, y la figura se deforma. El script mete un
+   **espacio explícito** antes de cada número cuando el anterior no es letra.
+
+Los dos casos están blindados por tests (`tests/icons.test.ts`), porque un `d`
+inválido no falla nunca por otra vía: si no se comprueba, el arte se degrada y
+nadie se entera hasta que se mira la pantalla.
+
+[it55764]: https://issuetracker.google.com/issues/37057931
+
 ## 14. Voz pregrabada (0.6.0 · voz Paulina desde 0.6.1)
 
 La voz del sistema sonaba robótica y **cambiaba según la tableta** (en

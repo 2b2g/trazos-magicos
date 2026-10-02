@@ -10,7 +10,7 @@
 | **E2E sintético** | navegador + eventos Pointer sintéticos (`preview_evaluate`) | flujo completo real: perfiles → mapa → demo → trazado → recompensa → progreso |
 | **Checklist de dispositivo** | manual (README) | Android 5 WebView real, iPad, gama baja, offline, rechazo de palma |
 
-## 2. Suite unitaria (89 tests, todos en verde)
+## 2. Suite unitaria (98 tests, todos en verde)
 
 - `tests/engine.test.ts` — muestreo (extremos exactos, continuidad de la O,
   espaciado uniforme), evaluador (trazo perfecto, temblor infantil, trazo
@@ -70,6 +70,24 @@
   sin pasos no se dice nada (pero el final se avisa igual). Bloquea el defecto
   de la recompensa: el conteo visual con escalón fijo de 0,28 s contra los
   ~0,78 s por número de la locución.
+- `tests/icons.test.ts` — **el chrome ya no depende de la fuente de emoji y el
+  arte no se corrompe** (9 tests, 0.9.0). Los cuatro últimos son los
+  importantes, porque un `d` inválido **no da error**: el navegador dibuja lo
+  que puede y descarta el resto en silencio, así que sin ellos el arte se
+  degrada sin que nada falle. Comprueban que **los flags de arco no llevan
+  decimales** (`A rx ry rot 0.0 0.0 x y` es un token inválido que descarta la
+  ruta entera), que **no hay números pegados** (`17.6` + `6.0` son `17.66`) y
+  que **ninguna figura está aplastada**. Verificado que fallan reintroduciendo
+  el bug a mano. Y el resto: cada icono de `ICONS` tiene geometría real (ningún `path>
+  vacío) y respeta la rejilla de 24; `ICON_NAMES` está sincronizado con las
+  claves (un icono que existe pero no se lista, o al revés, falla); **cero
+  emoji en `.btn__emoji` y `.pill__icon`** en todo `src/` (es la regresión que
+  vuelve en cuanto alguien "arregla" un botón metiendo un emoji); cada
+  ilustración de `ARTWORK` tiene `viewBox` y al menos un `path` con `d`; y
+  **todo emoji U+1F900+ que aparezca en `src/` tiene ilustración vectorial**
+  (recorre los ficheros por `codePointAt`, no por regex `u`, para no depender de
+  la versión de Node). Ese último es el que atrapa el 🧊 o el 🤖 que alguien
+  meta mañana y que en un Android 5 saldría como un cuadrado vacío.
 
 ## 3. Batería E2E en navegador (sesión de prueba intensiva)
 
@@ -100,6 +118,9 @@ dedo con PointerEvents sintéticos y leyendo localStorage como oráculo.
 | 20 | **Saludo de perfiles con la voz buena**: al arrancar no se pide nada; al primer toque en zona neutra suena `¿Quién quiere jugar?` (clip, rate 0.88, 1,28 s completos) **sin `TTS-respaldo`** ni errores; al primer toque en una tarjeta no se saluda y se abre el formulario; al volver de la pantalla principal el saludo es inmediato | ✅ (0.8.1) |
 | 21 | **El mapa habla al entrar**: `Elige una actividad.` con su clip (1,65 s completos), sincronizada con el bocadillo, sin repetir al volver de una actividad (botón casa) ni al cambiar de fase; después la actividad encadena su presentación sin cortes | ✅ (0.8.1) |
 | 22 | **Recompensa del número 4**: las 4 estrellas caen a +16/+19/+51/+16 ms del final de "uno/dos/tres/cuatro" y están todas antes de "4 estrellas"; el ánimo escrito y el locutado coinciden; con la voz silenciada el conteo mantiene el escalón de 0,28 s | ✅ (0.8.1) |
+| 23 | **Iconografía de las cuatro pantallas**: perfiles (avatar vector, botón ➕ → `plus`, estrella vector, *Volver* y *¡Listo!* sin texto), mapa (pestañas de fase solo con marca, candados y estrellas vector, 💤 → `sleep`, casa/sonido/ajustes vector), actividad (recompensa con `markEl`, 3 estrellas `starFilled`, *"4 ⭐"* como `.phrase--count`, *Otra vez* y *Seguir jugando* sin texto) y ajustes (título con `grown`, llave sin texto, 6 filas con 1 icono cada una). **Cero emoji de U+1F900+ a la vista** | ✅ (0.9.0) |
+| 24 | **El SVG se construye sin `innerHTML`**: los nodos salen de `createElementNS` y el `slow` (tortuga) se lee a 64 px — la primera versión en trazo se fundía en un borrón y se rehizo en relleno | ✅ (0.9.0) |
+| 25 | **Los 17 dibujos de contenido, completos**: cada ilustración a 128 px (hoja de diseño), 64 px (avatar del perfil) y 40 px (pestaña de fase). Los 8 avatares en fila, los 6 significados de letras y los 3 post-MVP. Comprobado con `getBBox()` que ninguna figura está aplastada (todas ocupan 24–28 de las 32 unidades de su caja) | ✅ (0.9.0) |
 
 ## 4. Hallazgos y correcciones de la batería
 
@@ -112,6 +133,7 @@ dedo con PointerEvents sintéticos y leyendo localStorage como oráculo.
 7. **Voz de la primera pantalla (0.8.1)** — el saludo se pedía 400 ms después de arrancar, sin gesto: el navegador rechazaba el MP3 (`NotAllowedError`) y la frase caía a la Web Speech API del dispositivo (voz del sistema, masculina en muchos Mac). Traza antes: `play` → `audio:error` → `TTS-respaldo` → `play-rechazado`. Después: sin locución al arrancar y, al primer toque, `play` (rate 0,88) → `playing` → `ended` en 1,28 s, sin respaldo. Además el silencio de desbloqueo se pedía dos veces (marca puesta al resolverse el MP3) y `Sfx.ensure()` exigía `window`, lo que impedía probar el desbloqueo sin DOM.
 8. **El mapa era la única pantalla muda (0.8.1)** — pintaba "Elige una actividad." pero nunca lo locutaba, aunque el clip existía desde 0.6.0: era un audio huérfano de facto. Al pedirlo al entrar (y no en `refresh()`) el niño oye dónde puede tocar y la frase queda sincronizada con el bocadillo; el orden con el saludo de perfiles lo fija la cola de voz, comprobado con un test donde el saludo sigue sonando.
 9. **El conteo de la recompensa iba tres veces por delante de la voz (0.8.1)** — las estrellas salían con `animation-delay` de 0,28 s en bloque, mientras Lapi tardaba ~0,78 s por número: las cuatro ya estaban en pantalla antes de que dijera "tres". Ahora la locución va por pasos (`services/voiceSteps.ts`) y cada estrella se enseña en el `onDone` de su número. Midiendo el DOM y el audio en el mismo reloj: +16/+19/+51/+16 ms. De paso, el ánimo se sorteaba dos veces (el texto y la voz podían no ser la misma frase).
+10. **Los botones eran emoji y no se veían (0.9.0)** — la auditoría de `src/` encontró 151 apariciones de emoji: 40 de *chrome* (botones, píldoras, HUD) y 111 de *contenido*. En Android 5 (Chromium 37) la fuente llega a Unicode 6, así que los 17 emoji de U+1F900+ del juego (avatares 🦊🐼🐸🦁🐧🦄🐯🐨 y significados 🪁🧊🥛🤖🦒🧀) salían como cuadros vacíos; en Safari 9, los de 2016 en adelante también. Se distinguieron los dos grupos: el chrome pasa a SVG propio y el contenido antiguo se queda. El fallo lo cazó el test, no el ojo: los 6 tests nuevos fallan si alguien vuelve a meter un emoji en un botón.
 
 ## 5. Cómo reproducir la batería sintética
 

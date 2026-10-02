@@ -305,6 +305,166 @@ body {
   margin-bottom: 2px;
 }
 
+/* ---------- iconos SVG del chrome (src/ui/icons.ts) ----------
+
+   Sustituyen a los emoji de los botones y de las píldoras: el emoji
+   depende de la fuente del dispositivo (en Android 5 y Safari 9 lo
+   moderno sale como cuadro vacío) y el SVG no. Heredan el color del
+   botón, así que la misma definición sirve para coral, verde o morado,
+   y el trazo grueso con remates redondos es el que le pide un botón
+   que toca un niño de 3 años. */
+.icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: middle;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon__fill {
+  fill: currentColor;
+  stroke: none;
+}
+
+.btn__emoji.icon {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pill__icon.icon {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Botón de una sola marca (sin texto): cuadrado y centrado. El texto
+   vive en el `aria-label`, que es lo que lee un lector de pantalla y
+   lo que un adulto lee si lo inspecciona. */
+.btn--only {
+  padding: 0;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+}
+
+.btn--only .icon,
+.btn--only .art {
+  width: 8vmin;
+  height: 8vmin;
+}
+
+.btn--only.btn--big .icon,
+.btn--only.btn--big .art {
+  width: 11.5vmin;
+  height: 11.5vmin;
+}
+
+.btn--only.btn--sm .icon,
+.btn--only.btn--sm .art {
+  width: 6.4vmin;
+  height: 6.4vmin;
+}
+
+/* Ilustraciones de contenido (`ui/artwork.ts`): mismo dibujo que el
+   emoji, pero en vector, para que no dependa de la fuente del
+   dispositivo. Mismo tamaño que el emoji que sustituye (`1em`). */
+.art {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.art--avatar {
+  width: 7.4vmin;
+  height: 7.4vmin;
+}
+
+.art--tab {
+  width: 5.4vmin;
+  height: 5.4vmin;
+}
+
+.art--glyph {
+  width: 1em;
+  height: 1em;
+}
+
+.art--prize {
+  width: 1em;
+  height: 1em;
+}
+
+/* Emoji sin arte vectorial: se escribe, pero al mismo tamaño que el
+   vector para que la fila se lea igual. */
+.mark--text {
+  line-height: 1;
+}
+
+/* Estrellas y marcas de color */
+.icon--gold {
+  color: #ffc42e;
+}
+
+.icon--heart {
+  color: #ff7a7a;
+}
+
+.icon--lock {
+  color: #7a6ea8;
+}
+
+.icon--warn {
+  width: 9vmin;
+  height: 9vmin;
+  margin-right: 12px;
+  color: #ffd23f;
+  vertical-align: middle;
+}
+
+/* Etiqueta con icono delante (ajustes) */
+.title--with-mark,
+.switch-row__label {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+}
+
+.switch-row__label {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 auto;
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.title--with-mark .icon {
+  width: 5.4vmin;
+  height: 5.4vmin;
+  margin-left: 12px;
+  color: #5f28cf;
+}
+
+.switch-row__label .icon {
+  width: 4.6vmin;
+  height: 4.6vmin;
+  margin-right: 14px;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+/* "4 ⭐" al final del conteo */
+.phrase--count .icon {
+  width: 1em;
+  height: 1em;
+}
+
 .btn--green {
   background: #4ee08a;
   border-color: #23a35c;

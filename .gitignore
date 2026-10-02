@@ -8,3 +8,6 @@ npm-debug.log*
 
 # material temporal del generador de voz (audiciones, WAV intermedios)
 .voice/
+
+# material de diseño (hojas comparativas, no se versiona)
+.design/
