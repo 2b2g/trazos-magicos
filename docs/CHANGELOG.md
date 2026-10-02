@@ -3,6 +3,57 @@
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
 
+## [0.7.0] — 2026-10-02 · Voz de Paulina, mascota Lapi y locuciones que no se cortan
+
+### Corregido
+- **Se acabaron las frases cortadas.** Cada `sayAll` cancelaba la locución en
+  curso para "dar paso" a la nueva: la presentación de la actividad se partía
+  a media palabra cuando arrancaba la demo (un `setTimeout` de 1,6 s heredado
+  del TTS) y un ánimo nuevo pisaba la pista del trazo. Ahora
+  **`services/voiceSequencer.ts`** garantiza que **la locución que suena
+  termina siempre**; lo que llega espera su turno y se oye completo, en orden.
+  Solo interrumpen `stopVoice()` (salir de pantalla) y silenciar el juego.
+- **La demo arranca cuando termina la presentación**, no con un temporizador
+  a ojo: `screens/activity.ts` encadena con el `onDone` real de la voz
+  (mínimo 1,2 s en pantalla para que el peque vea el recurso aunque el audio
+  esté silenciado).
+
+### Cambiado
+- **La voz del juego es `Paulina (Español (México))`** (es_MX, femenina):
+  los **303 MP3 se han regenerado con `--force --prune`** y el manifiesto lo
+  declara (`provider: "macos"`). El juego sigue sin depender de ningún
+  servicio en ejecución: los audios viajan en el bundle.
+- **La mascota ahora se llama Lapi** (femenina, a juego con la voz):
+  `content/brand.ts` (`mascot: "Lapi"`), la bienvenida —*"¡Hola! Soy Lapi, tu
+  lápiz mágico. ¿Jugamos?"*— y todos los comentarios/JSDoc y documentos. La
+  bienvenida cambia de texto, así que tiene **id de audio nuevo** y el MP3
+  anterior quedó podado.
+- **Service worker `garabati-v4`**: los MP3 se regeneraron con otra voz
+  conservando el nombre de fichero, así que la caché `v3` habría servido
+  audio viejo; al activar se purga.
+- `package.json` sube a **0.7.0** (estaba en 0.5.0, desincronizado del
+  CHANGELOG).
+
+### Añadido
+- **`services/voiceSequencer.ts`**: cola pura (sin DOM) que serializa las
+  locuciones, con tope de 2 pendientes (si se acumulan avisos se descartan los
+  más viejos —nunca el que suena— avisando igual de su `onDone`), `cancel()`
+  para el barge-in legítimo y un **perro guardián** que desatasca la cola si un
+  WebView nunca avisa del final.
+- **`VoiceProvider.speakAll(texts, onDone)`**: contrato de finalización real
+  (clips: `ended` encadenado; TTS: `onend`/`onerror`; fichero roto o autoplay
+  bloqueado: respaldo a TTS que también avisa). `audio.sayAll(texts, onDone)`
+  lo expone a las pantallas.
+- **`tests/voiceQueue.test.ts`** (11 tests): ninguna locución se corta, el
+  orden se respeta, `onDone` encadena sin timers, el tope descarta los avisos
+  viejos, `cancel()` vacía, el perro guardián funciona y la fachada no cancela
+  lo que suena → **59 tests** en total.
+
+### Notas
+- Sigue en pie el aviso de licencias: las voces de Apple valen para
+  desarrollo; antes de publicar, regenerar con un proveedor con licencia de
+  redistribución (`docs/VOICE.md` §3). Es un comando y el resto no cambia.
+
 ## [0.6.0] — 2026-10-02 · Voz pregrabada (adiós a la voz robótica)
 
 ### Cambiado

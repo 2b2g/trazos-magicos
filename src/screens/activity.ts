@@ -3,7 +3,7 @@
    adaptativa (la tolerancia se relaja si el niño lo necesita) →
    recompensa con significado (letra) o cantidad (número).
 
-   Estética (guía UX §6): Liro reacciona a cada intento —salta al
+   Estética (guía UX §6): Lapi reacciona a cada intento —salta al
    acertar, se apena con dulzura al fallar— el progreso del recurso
    se ve como puntos, y el final es una celebración con confeti.
    Nunca hay castigo ni bloqueo: siempre se avanza. */
@@ -101,10 +101,10 @@ export function renderActivity(
   var dotEls: HTMLElement[] = [];
 
   var bubbleEl = el("div", { class: "bubble bubble--left", text: "" });
-  var liro = mascotEl({ mood: "idle", stars: deps.store.totalStars() });
+  var lapi = mascotEl({ mood: "idle", stars: deps.store.totalStars() });
   var mascotLine = el("div", {
     class: "mascot-line",
-    children: [liro, bubbleEl],
+    children: [lapi, bubbleEl],
   });
 
   screen.appendChild(hud);
@@ -188,16 +188,16 @@ export function renderActivity(
     }
   }
 
-  /* ---------- Liro reacciona (feedback multimodal inmediato) ---------- */
+  /* ---------- Lapi reacciona (feedback multimodal inmediato) ---------- */
 
   function react(mood: MascotMood): void {
     // reinicia la animación aunque repita emoción
-    liro.className = liro.className.replace(/mascot--(idle|happy|oh|party)/, "mascot--idle");
-    void liro.offsetWidth; // reflow: fuerza a reiniciar el keyframe
-    setMascotMood(liro, mood);
+    lapi.className = lapi.className.replace(/mascot--(idle|happy|oh|party)/, "mascot--idle");
+    void lapi.offsetWidth; // reflow: fuerza a reiniciar el keyframe
+    setMascotMood(lapi, mood);
     if (mood !== "idle" && mood !== "party") {
       later(1500, function () {
-        if (alive) setMascotMood(liro, "idle");
+        if (alive) setMascotMood(lapi, "idle");
       });
     }
   }
@@ -213,9 +213,9 @@ export function renderActivity(
 
   /* ---------- fases ---------- */
 
-  function say(text: string): void {
+  function say(text: string, onDone?: () => void): void {
     bubbleEl.textContent = text;
-    audio.say(text);
+    audio.say(text, onDone);
   }
 
   /**
@@ -223,21 +223,36 @@ export function renderActivity(
    * pre-generable, así que se hablan una tras otra (con respiro entre
    * ellas) en vez de concatenar cadenas nuevas.
    */
-  function sayParts(parts: string[]): void {
+  function sayParts(parts: string[], onDone?: () => void): void {
     var clean: string[] = [];
     for (var i = 0; i < parts.length; i++) {
       if (parts[i]) clean.push(parts[i]);
     }
-    if (!clean.length) return;
+    if (!clean.length) {
+      if (onDone) onDone();
+      return;
+    }
     bubbleEl.textContent = clean.join(" ");
-    audio.sayAll(clean);
+    audio.sayAll(clean, onDone);
   }
+
+  /** Presentación mínima en pantalla: aunque la voz esté silenciada o
+      aún no haya sonado, el peque ve el recurso y a Lapi antes del
+      trazo (antes eran 1,6 s fijos, que cortaban la presentación). */
+  var MIN_PRESENT_MS = 1200;
 
   function start(): void {
     phase = "present";
     promptEl.textContent = resource.label;
-    sayParts(resource.speech && resource.speech.length ? resource.speech : [resource.label]);
-    later(1600, playDemoSequence);
+    var shownAt = Date.now();
+    var intro = resource.speech && resource.speech.length ? resource.speech : [resource.label];
+    // La demo arranca cuando la presentación TERMINA de sonar, no con un
+    // temporizador a ojo: así la voz nunca pisa su propia instrucción.
+    sayParts(intro, function () {
+      if (!alive) return;
+      var wait = MIN_PRESENT_MS - (Date.now() - shownAt);
+      later(wait > 0 ? wait : 0, playDemoSequence);
+    });
   }
 
   function playDemoSequence(): void {
@@ -421,7 +436,7 @@ export function renderActivity(
     starRow(layer, stars);
     confetti(screen, stars === 3 ? 26 : 16);
 
-    // Liro baila la victoria dentro de la celebración (es el refuerzo
+    // Lapi baila la victoria dentro de la celebración (es el refuerzo
     // emocional del logro: la cara que celebra con el niño)
     layer.appendChild(
       el("div", {

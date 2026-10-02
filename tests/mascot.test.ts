@@ -3,7 +3,7 @@ import { mascotStage } from "../src/ui/mascot";
 
 /* La mascota que crece es una mecánica de retención (guía UX §8):
    sus umbrales son contrato, no decoración. */
-describe("mascota Liro — etapas de crecimiento", () => {
+describe("mascota Lapi — etapas de crecimiento", () => {
   it("empieza pequeña sin estrellas", () => {
     expect(mascotStage(0)).toBe(1);
     expect(mascotStage(4)).toBe(1);

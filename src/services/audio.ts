@@ -14,8 +14,24 @@
 
 import { VoiceProvider } from "./voiceTypes";
 import { ClipVoiceProvider } from "./voiceClips";
+import { VoiceSequencer } from "./voiceSequencer";
 
 export type { VoiceProvider };
+
+/** Lo que `AudioService` espera del proveedor de clips (inyectable en
+    tests sin DOM). `ClipVoiceProvider` lo cumple tal cual. */
+export interface ClipSpeaker extends VoiceProvider {
+  /** Descripción humana del catálogo (ajustes y diagnóstico). */
+  readonly description: string;
+  /** ¿Hay audio grabado para esta frase exacta? */
+  has(text: string): boolean;
+  /** Reproduce la locución si TODAS sus frases tienen clip. */
+  playAll(texts: string[], onDone?: () => void): boolean;
+  /** Salvavidas cuando un clip no puede sonar (autoplay, fichero roto). */
+  onFallback: ((texts: string[], onDone?: () => void) => void) | null;
+  /** Desbloqueo del autoplay en el primer toque del niño. */
+  unlock(): void;
+}
 
 /* ---------- proveedor Web Speech API (con guardas Android 5) ---------- */
 
@@ -26,7 +42,8 @@ class TtsProvider {
   private slow = true; // voz pausada por defecto (para peques)
 
   constructor() {
-    var s = (window as any).speechSynthesis;
+    var w: any = typeof window === "undefined" ? {} : window;
+    var s = w.speechSynthesis;
     if (s) {
       this.synth = s;
       this.pickVoice();
@@ -85,8 +102,12 @@ class TtsProvider {
     this.slow = on;
   }
 
-  speak(text: string): void {
-    if (!this.enabled || !this.synth || !text) return;
+  speak(text: string, onDone?: () => void): void {
+    var done = onDone || null;
+    if (!this.enabled || !this.synth || !text) {
+      if (done) done();
+      return;
+    }
     try {
       this.synth.cancel();
       var u = new (window as any).SpeechSynthesisUtterance(text);
@@ -95,9 +116,21 @@ class TtsProvider {
       u.rate = this.slow ? 0.72 : 0.9; // pausado: los peques siguen la voz
       u.pitch = this.slow ? 1.3 : 1.15; // timbre agudo y cálido, "infantil"
       u.volume = 1;
+      // aviso de final: es lo que permite encadenar locuciones sin
+      // temporizadores a ojo (y sin cortar la frase anterior)
+      if (done) {
+        var once = function (): void {
+          var d = done;
+          done = null;
+          if (d) d();
+        };
+        u.onend = once;
+        u.onerror = once;
+      }
       this.synth.speak(u);
     } catch (e) {
-      /* sin TTS: el juego sigue funcionando (texto + iconos) */
+      // sin TTS: el juego sigue funcionando (texto + iconos)
+      if (done) done();
     }
   }
 
@@ -197,11 +230,14 @@ class TtsVoiceProvider implements VoiceProvider {
     return this.tts.available;
   }
 
-  speakAll(texts: string[]): void {
-    if (!texts.length) return;
+  speakAll(texts: string[], onDone?: () => void): void {
+    if (!texts.length) {
+      if (onDone) onDone();
+      return;
+    }
     // El TTS no tiene pausas: las frases se unen y el punto final de cada
     // una hace de respiro natural.
-    this.tts.speak(texts.join(" "));
+    this.tts.speak(texts.join(" "), onDone);
   }
 
   cancel(): void {
@@ -221,23 +257,43 @@ class TtsVoiceProvider implements VoiceProvider {
  * Fachada única del audio del juego (FDD §19).
  *
  * - `say()` / `sayAll()` → instrucciones y ánimo por voz: clips buenos
- *   si existen, voz del sistema como respaldo.
+ *   si existen, voz del sistema como respaldo. **Nunca se cortan**: la
+ *   locución que suena termina siempre y las nuevas esperan su turno
+ *   (`services/voiceSequencer.ts`). `sayAll(texts, onDone)` permite
+ *   encadenar pantallas sin temporizadores.
+ * - `stopVoice()` → la única interrupción legítima (salir de pantalla o
+ *   silenciar).
  * - `sfx.*` → efectos procedurales WebAudio (sin ficheros: offline y sin
  *   descargas extra).
  */
 export class AudioService {
   public tts = new TtsProvider();
-  public clips = new ClipVoiceProvider();
+  public clips: ClipSpeaker;
   public sfx = new Sfx();
-  private systemVoice = new TtsVoiceProvider(this.tts);
+  private systemVoice: VoiceProvider;
   private voiceOn = true;
+  private sequencer: VoiceSequencer;
 
-  constructor() {
+  /**
+   * @param providers proveedores alternativos (tests sin navegador).
+   */
+  constructor(providers?: { clips?: ClipSpeaker; system?: VoiceProvider }) {
+    this.clips = (providers && providers.clips) || new ClipVoiceProvider();
+    this.systemVoice = (providers && providers.system) || new TtsVoiceProvider(this.tts);
+
     var self = this;
     // si un clip no puede sonar, la locución continúa con el TTS
-    this.clips.onFallback = function (texts) {
-      if (self.voiceOn) self.systemVoice.speakAll(texts);
+    this.clips.onFallback = function (texts, onDone) {
+      if (self.voiceOn) self.systemVoice.speakAll(texts, onDone);
+      else if (onDone) onDone();
     };
+
+    this.sequencer = new VoiceSequencer(function (texts, done) {
+      // clips si TODAS las frases tienen audio; si no, TTS para la locución
+      // completa (nunca se mezclan a medias)
+      if (self.clips.playAll(texts, done)) return;
+      self.systemVoice.speakAll(texts, done);
+    });
   }
 
   /** ¿Qué voz está sonando? ("ElevenLabs · Sofia (214 audios)" o
@@ -247,24 +303,30 @@ export class AudioService {
   }
 
   /** Una frase corta (ánimo, "¡Muy bien!"). */
-  say(text: string): void {
-    this.sayAll([text]);
+  say(text: string, onDone?: () => void): void {
+    this.sayAll([text], onDone);
   }
 
   /**
    * Varias frases seguidas, con pausas naturales entre ellas.
    * Se usan clips si TODAS existen; si no, la voz del sistema locuta
    * la locución completa (nunca mezcla clips y TTS en la misma frase).
+   *
+   * Si ya hay voz sonando, esta locución **espera a que termine** en
+   * vez de cortarla: los peques no entienden una frase a medias.
+   *
+   * @param onDone terminó de sonar (o no pudo sonar), nunca interrumpida.
    */
-  sayAll(texts: string[]): void {
-    if (!this.voiceOn || !texts.length) return;
-    this.clips.cancel();
-    this.systemVoice.cancel();
-    if (this.clips.playAll(texts)) return;
-    this.systemVoice.speakAll(texts);
+  sayAll(texts: string[], onDone?: () => void): void {
+    if (!this.voiceOn || !texts.length) {
+      if (onDone) onDone();
+      return;
+    }
+    this.sequencer.enqueue(texts, onDone);
   }
 
   stopVoice(): void {
+    this.sequencer.cancel();
     this.clips.cancel();
     this.systemVoice.cancel();
   }
@@ -273,6 +335,7 @@ export class AudioService {
     this.voiceOn = on;
     this.clips.setEnabled(on);
     this.systemVoice.setEnabled(on);
+    if (!on) this.sequencer.cancel();
   }
 
   /** Voz pausada para peques (ajuste 🐢, activada por defecto):

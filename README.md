@@ -3,7 +3,7 @@
 Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial** para niños de 3 a 6 años. Implementación del FDD v2.0 (MVP Fases A–D).
 
 > **Grande, brillante, redondo, sonoro, con caras, un solo camino, feedback
-> inmediato y celebración constante.** La mascota es **Liro**, un lápiz con
+> inmediato y celebración constante.** La mascota es **Lapi**, un lápiz con
 > cara que crece con las estrellas del niño.
 
 ## Documentación
@@ -25,7 +25,7 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 ```bash
 npm install
 npm run dev        # desarrollo → http://localhost:5173
-npm test           # 37 tests unitarios (motor, storage, mascota, marca)
+npm test           # 59 tests unitarios (motor, storage, mascota, marca, voz)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
 ```
@@ -35,7 +35,7 @@ npm run preview    # servir dist/
 ```bash
 npm run voice:lines                                     # el guion completo del juego
 npm run voice:audition                                  # muestras para elegir voz (macOS)
-npm run voice:generate -- --voice "Flo (Español (España))" --prune
+npm run voice:generate -- --voice "Paulina (Español (México))" --force --prune
 ELEVENLABS_API_KEY=xxx npm run voice:generate -- --provider elevenlabs --voice "<ID>"
 ```
 
@@ -66,7 +66,7 @@ src/
 │   └── phrases.ts         catálogo de frases TTS en español
 │   └── brand.ts           identidad (nombre, mascota, lema) en un solo sitio
 ├── screens/           perfiles, mapa, actividad (bucle completo), ajustes
-├── ui/                Liro la mascota (CSS con cara) y decoración del cielo
+├── ui/                Lapi la mascota (CSS con cara) y decoración del cielo
 ├── services/          audio (TTS configurable + SFX WebAudio), storage multi-perfil
 ├── util/dom.ts        helpers DOM ES5 · util/fx.ts confeti y estrellas
 └── main.ts            orquestador + service worker
@@ -143,7 +143,7 @@ docker compose up -d --build
 - [ ] Tipografía: se ve Fredoka One (redondeada), no la fuente de respaldo
 - [ ] Botones: se hunden al pulsar; ningún toque cae en un botón contiguo
 - [ ] Silencio: el botón 🔊/🔇 del mapa y de la actividad funciona y se recuerda
-- [ ] Mascota: Liro cambia de etapa al pasar de 5 y de 20 estrellas
+- [ ] Mascota: Lapi cambia de etapa al pasar de 5 y de 20 estrellas
 - [ ] localStorage bloqueado (modo incógnito): el juego sigue funcionando sin guardar
 
 ## Post-MVP (ya preparado en el motor)

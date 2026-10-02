@@ -4,7 +4,7 @@
    tablets de gama baja.
 
    La celebración exagerada es el principal motor de retención:
-   cada logro termina en confeti, sonido alegre y baile de Liro. */
+   cada logro termina en confeti, sonido alegre y baile de Lapi. */
 
 import { el } from "../util/dom";
 

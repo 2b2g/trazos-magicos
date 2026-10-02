@@ -24,7 +24,7 @@ tableta barata que en un iPad, y también sin conexión.
 - El **nodo amarillo pulsante** es la siguiente actividad. Los candados se
   abren terminando la anterior (los dos primeros de cada mundo están libres).
 - Cada actividad sigue el mismo ritual, pensado para 3–6 años:
-  1. La mascota **Liro** presenta la letra o el trazo y lo dice en voz alta.
+  1. La mascota **Lapi** presenta la letra o el trazo y lo dice en voz alta.
   2. Un **lápiz mágico** demuestra el recorrido.
   3. El niño traza **trazo a trazo**: punto naranja para empezar, flecha para
      la dirección.
@@ -33,7 +33,7 @@ tableta barata que en un iPad, y también sin conexión.
   5. Al terminar: **celebración** con confeti, estrellas que aparecen una a
      una (siempre al menos una) y recompensa con significado — "A de
      Avión" o cinco estrellas contadas en voz alta.
-- **Liro crece contigo**: la mascota cambia de tamaño y gana un destello a
+- **Lapi crece contigo**: la mascota cambia de tamaño y gana un destello a
   partir de 5 estrellas y una corona a partir de 20. Es el progreso visible
   para quien todavía no lee números: un dibujo que mejora.
 - Arriba a la derecha están siempre las **⭐ estrellas ganadas** y el botón
@@ -50,9 +50,11 @@ Mantén pulsada la **🔑** 3 segundos para entrar. Ahí puedes:
 - **🐢 Voz pausada**: alarga la locución un 12 % para que los peques sigan
   la frase (activada por defecto). Desactívala para la marcha normal.
 - **🎙️ Voz del juego** (fila informativa): indica qué voz está sonando y
-  cuántas frases grabadas hay, p. ej. *"macos · Flo (Español (España))
+  cuántas frases grabadas hay, p. ej. *"macos · Paulina (Español (México))
   (303 audios)"*. Si dice **"voz del sistema"** es que faltan audios y el
-  juego está usando la voz del dispositivo.
+  juego está usando la voz del dispositivo. Las locuciones **nunca se
+  cortan**: si algo nuevo tiene que hablar, espera a que termine la frase
+  en curso.
 - **🎵 Efectos**: sonidos de acierto on/off.
 - **❤️ Modo extra fácil**: corredor de tolerancia más ancho y umbrales más
   amables — recomendado para los más pequeños o con motricidad dificultada.

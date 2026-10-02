@@ -6,7 +6,7 @@ export const BRAND = {
   /** Nombre visible del producto. */
   name: "Garabati",
   /** Nombre de la mascota (lápiz con cara que guía al niño). */
-  mascot: "Liro",
+  mascot: "Lapi",
   /** Lema corto (≤ 4 palabras) para la pantalla de inicio. */
   tagline: "Dibujar es jugar",
 } as const;

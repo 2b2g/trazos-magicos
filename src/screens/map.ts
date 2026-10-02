@@ -162,7 +162,7 @@ export function renderMap(
       node.appendChild(starRow);
       node.addEventListener("click", function () {
         if (!canPlay) {
-          // feedback amable, nunca castigo: Liro anima a seguir
+          // feedback amable, nunca castigo: Lapi anima a seguir
           audio.sfx.retry();
           bubbleEl.textContent = PHRASES.lockedNode;
           audio.say(PHRASES.lockedNode);

@@ -286,7 +286,7 @@ ${voiced.map((id) => "    " + JSON.stringify(id) + ",").join("\n")}
 /* ---------- audiciones ---------- */
 
 async function audition() {
-  const sample = "¡Hola! Soy Liro, tu lápiz mágico. ¿Jugamos? Dibujar es jugar.";
+  const sample = "¡Hola! Soy Lapi, tu lápiz mágico. ¿Jugamos? Dibujar es jugar.";
   const { stdout } = await run("say", ["-v", "?"]);
   const voices = [];
   for (const line of stdout.split("\n")) {

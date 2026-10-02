@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { BRAND } from "../src/content/brand";
+import { PHRASES } from "../src/content/phrases";
 
 /* El renombrado de producto toca muchos ficheros: estos tests
    impiden que se quede a medias o se desincronice. */
@@ -31,6 +32,25 @@ describe("identidad de Garabati", () => {
 
   it("la caché del service worker lleva el nombre nuevo", () => {
     expect(read("public/sw.js")).toMatch(/garabati-v\d+/);
+  });
+
+  it("la mascota es Lapi y la bienvenida la nombra igual", () => {
+    expect(BRAND.mascot).toBe("Lapi");
+    expect(PHRASES.welcome).toContain(BRAND.mascot);
+  });
+
+  it("no queda ninguna mención a la mascota anterior (Liro) en la app", () => {
+    var files = [
+      "src/ui/mascot.ts",
+      "src/content/phrases.ts",
+      "src/screens/activity.ts",
+      "src/screens/map.ts",
+      "src/util/fx.ts",
+      "scripts/generate-voice.mjs",
+    ];
+    for (var i = 0; i < files.length; i++) {
+      expect(read(files[i]).toLowerCase().indexOf("liro")).toBe(-1);
+    }
   });
 
   it("no queda ninguna mención al nombre antiguo en la app", () => {

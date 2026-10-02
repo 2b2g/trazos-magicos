@@ -1,15 +1,15 @@
-/* LIRO — la mascota de Garabati: un lápiz con cara, dibujado con CSS.
+/* LAPI — la mascota de Garabati: un lápiz con cara, dibujado con CSS.
    Sin imágenes: nítido en cualquier pantalla, cero descargas y
    compatible con Chromium 37 (Android 5).
 
    Los niños de 3–6 años se identifican emocionalmente con caras
-   (guía UX §3): Liro tiene ojos grandes con brillo, mofletes y boca
+   (guía UX §3): Lapi tiene ojos grandes con brillo, mofletes y boca
    expresiva. Además **crece con las estrellas del perfil**, la
    mecánica de retención más barata y visible (guía §8). */
 
 import { el } from "../util/dom";
 
-/** Emociones de Liro. Nunca hay una emoción agresiva o de castigo. */
+/** Emociones de Lapi. Nunca hay una emoción agresiva o de castigo. */
 export type MascotMood = "idle" | "happy" | "oh" | "party";
 
 export interface MascotOptions {
@@ -22,7 +22,7 @@ export interface MascotOptions {
 }
 
 /**
- * Etapa de crecimiento de Liro según las estrellas acumuladas.
+ * Etapa de crecimiento de Lapi según las estrellas acumuladas.
  * 1 → peque (0–4 ⭐), 2 → crecido con destello (5–19 ⭐),
  * 3 → con corona (20+ ⭐). Puro y testeable.
  */
@@ -36,7 +36,7 @@ export function mascotStage(stars: number): 1 | 2 | 3 {
 var BADGES: string[] = ["", "✨", "👑"];
 
 /**
- * Construye a Liro.
+ * Construye a Lapi.
  * @example mascotEl({ mood: "party", stars: store.totalStars() })
  */
 export function mascotEl(opts?: MascotOptions): HTMLElement {
@@ -74,7 +74,7 @@ export function mascotEl(opts?: MascotOptions): HTMLElement {
   return wrap;
 }
 
-/** Cambia la emoción de un Liro ya pintado (feedback inmediato). */
+/** Cambia la emoción de un Lapi ya pintado (feedback inmediato). */
 export function setMascotMood(node: HTMLElement, mood: MascotMood): void {
   node.className = node.className.replace(
     /mascot--(idle|happy|oh|party)/,

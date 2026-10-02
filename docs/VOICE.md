@@ -27,13 +27,27 @@ solo como **respaldo** si falta algún audio o el navegador no deja sonar un MP3
 texto → voiceId(texto)  →  voice/<id>.mp3        (lo que se empaqueta)
                         →  content/voiceManifest.ts (ids existentes, generado)
 
-audio.sayAll([...]) → ClipVoiceProvider  ¿están TODOS los MP3? → sí: cola de <audio>
-                                         no → TtsVoiceProvider (voz del sistema)
+audio.sayAll([...]) → VoiceSequencer     la que suena termina; la nueva espera
+                        → ClipVoiceProvider  ¿están TODOS los MP3?
+                                             sí → cola de <audio> (onDone real)
+                                             no → TtsVoiceProvider (sistema)
 ```
 
 - Ids **deterministas** (`slug` legible + hash FNV-1a del texto exacto): el
   generador y la app calculan el mismo id, sin tabla que se desincronice.
+- **Ninguna locución se corta** (`services/voiceSequencer.ts`): la voz es la
+  instrucción, y una frase partida a media palabra no comunica nada a un
+  peque. Lo que llega mientras algo suena espera su turno; solo "salir de
+  pantalla" o "silenciar" interrumpen (`stopVoice()`). La cola acepta 2
+  locuciones pendientes: si se acumulan más, se descartan las más viejas
+  (los avisos nuevos son los relevantes) sin tocar la que está sonando.
+- **`onDone` real, no temporizadores**: cada locución avisa de su final
+  (clip `ended`, TTS `onend`, perro guardián si un WebView nunca avisa). Con
+  eso la actividad encadena *presentación → demostración* sin cortar nada.
 - El juego **nunca mezcla** clip y TTS en la misma locución.
+- **Voz del juego: `Paulina (Español (México))`** (`es_MX`, voz femenina de
+  macOS; la mascota, **Lapi**, es femenina). Los 303 MP3 del repositorio
+  están generados con ella y el manifiesto lo declara.
 - Los audios viven en `public/voice/` (~3 MB) y el service worker los cachea al
   usarlos, así que se juega sin conexión.
 - Los tests (`tests/voice.test.ts`) fallan si el manifiesto, los ficheros y el
@@ -60,6 +74,14 @@ calma, y publica con **ElevenLabs** (si buscas el tono "dibujo animado") o
 **Azure/Google** (si quieres varias voces y control fino con SSML). Si el
 proyecto tiene que ser 100 % libre, usa **Piper**.
 
+> **Decisión actual (0.6.1)**: el juego usa **Paulina (Español (México))**, una
+> voz femenina `es_MX` de macOS, porque a oído es la que mejor encaja con una
+> mascota femenina (**Lapi**) y no cuesta nada. Los audios están versionados en
+> `public/voice/`, así que el juego no depende de ningún servicio en
+> ejecución. Antes de un lanzamiento comercial hay que **regenerar los 303 MP3
+> con un proveedor con licencia de redistribución** (Piper, OpenAI, Azure,
+> Google, Polly o ElevenLabs): es un solo comando, el resto del juego no cambia.
+
 ## 4. comandos
 
 ```bash
@@ -71,7 +93,9 @@ npm run voice:lines
 npm run voice:audition
 
 # generar TODO con las voces del Mac (lo que usa el repositorio hoy)
-npm run voice:generate -- --voice "Flo (Español (España))" --prune
+npm run voice:generate -- --voice "Paulina (Español (México))" --prune
+# rehacer los 303 audios con otra voz desde cero
+npm run voice:generate -- --voice "Paulina (Español (México))" --force --prune
 
 # regenerar con otra voz / otro ritmo / otro tono
 npm run voice:generate -- --voice "Sandy (Español (México))" --rate 150 --pitch 1.08 --force
@@ -109,8 +133,8 @@ sirve ya con la voz nueva y sin ninguna dependencia externa en ejecución.
   (100 ms, volumen mínimo) para que Chrome/Android permita los audios después.
 - **Si falta un audio**, esa locución completa pasa al TTS: el juego nunca se
   queda mudo ni a medias.
-- **Ajustes** muestra qué voz está activa: *"🎙️ Voz del juego: macos · Flo
-  (Español (España)) (303 audios)"* o *"voz del sistema"*.
+- **Ajustes** muestra qué voz está activa: *"🎙️ Voz del juego: macos ·
+  Paulina (Español (México)) (303 audios)"* o *"voz del sistema"*.
 - **Peso**: 3,3 MB de MP3 mono 22 kHz a 48 kbps (~6 KB por segundo de voz). Se
   descargan bajo demanda y quedan en la caché del service worker; no se
   precargan.

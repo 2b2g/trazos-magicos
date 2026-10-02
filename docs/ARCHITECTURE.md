@@ -21,9 +21,10 @@ estático: `dist/` (HTML + bundle moderno + bundle ES5 legacy + CSS + SW).
 │  │                       ↓             ↑                      │   │
 │  │  touch (entrada) → evaluator (veredicto) → demo (animación)│   │
 │  └───────────────────────────┬────────────────────────────────┘   │
-│  ui: mascot (Liro) · decor (cielo) ── util/dom · util/fx (confeti) │
+│  ui: mascot (Lapi) · decor (cielo) ── util/dom · util/fx (confeti) │
 │  services: audio (voz grabada + TTS + SFX) · storage · content/brand│
-│  voz: voiceClips (MP3) → voiceId · voiceLines ↔ scripts/generate-voice│
+│  voz: voiceSequencer (nunca corta) → voiceClips (MP3) / TTS          │
+│       voiceId · voiceLines ↔ scripts/generate-voice                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -107,12 +108,16 @@ y superposición de demo. **DPR limitado a 1.5** (gama baja Android 5).
 
 ## 7. Audio (services/audio.ts)
 
-Dos proveedores de voz en cadena y efectos procedurales. El niño nunca se
-queda sin voz: si falta un audio, se locuta con la voz del sistema.
+Dos proveedores de voz en cadena, una **cola que no corta** y efectos
+procedurales. El niño nunca se queda sin voz: si falta un audio, se locuta
+con la voz del sistema.
 
 ```
 sayAll(["¡Muy bien!", "Hacia abajo."])
         │
+        ├─ 0. VoiceSequencer       la locución en curso SIEMPRE termina; la
+        │      services/voiceSequencer.ts   nueva espera su turno (tope: 2 en
+        │                                   cola). onDone encadena sin timers
         ├─ 1. ClipVoiceProvider   ¿existen TODOS los MP3?  →  cola de <audio>
         │      services/voiceClips.ts   (voice/<id>.mp3, offline, voz igual en
         │                                todas las tabletas)
@@ -120,6 +125,15 @@ sayAll(["¡Muy bien!", "Hacia abajo."])
                (es-ES/es-419, rate 0.72/0.9, pitch 1.3/1.15 con ajuste 🐢)
 ```
 
+- **Ninguna locución se corta** (`services/voiceSequencer.ts`, 1.0): la voz
+  es la instrucción y una frase a medias no comunica nada. Lo que llega
+  mientras algo suena se pone en cola (tope 2; si se acumula se descartan
+  los avisos más viejos, nunca el que suena). Interrumpir es solo
+  `stopVoice()`: salir de pantalla o silenciar.
+- **`onDone` en vez de temporizadores**: `sayAll(texts, onDone)` avisa del
+  final real (clips: `ended`; TTS: `onend`/`onerror`; perro guardián de
+  seguridad si un WebView nunca avisa). `screens/activity.ts` encadena
+  *presentación → demostración* con ese aviso, no con 1,6 s a ojo.
 - **Nunca se mezcla** clip y TTS en la misma locución: si falta una sola
   frase, todo ese turno va al TTS (las pausas quedan naturales).
 - **`sayAll(segmentos)`** en vez de concatenar cadenas: la app habla frases
@@ -255,9 +269,9 @@ invierte (verde = avanzar, coral = atrás).
   🔊/🔇 sonido); el progreso vive siempre en una esquina.
 - **`.node`** (`--done`, `--current`, `--locked`): nodo del sendero; el
   actual pulsa y emite un halo, el bloqueado duerme (💤) en vez de prohibir.
-- **`.mascot`** (`src/ui/mascot.ts`): Liro, lápiz con cara; emociones
+- **`.mascot`** (`src/ui/mascot.ts`): Lapi, lápiz con cara; emociones
   `idle`/`happy`/`oh`/`party` y escalado por etapa de estrellas.
-- **`.bubble`**: bocadillo de Liro, siempre con voz (TTS) acompañando.
+- **`.bubble`**: bocadillo de Lapi, siempre con voz (TTS) acompañando.
 - **`.reward-layer` + `util/fx`**: celebración con confeti, estrellas
   secuenciales y mascota bailando.
 
@@ -271,7 +285,7 @@ invierte (verde = avanzar, coral = atrás).
   (perfiles → mapa → actividad → recompensa) con **atrás grande siempre
   visible** y el resto del camino en una sola pantalla (sin scroll infinito
   ni menús hamburguesa).
-- **Nunca castigo visual**: los fallos solo producen ánimo de Liro y
+- **Nunca castigo visual**: los fallos solo producen ánimo de Lapi y
   tolerancia adaptativa (§4).
 
 ### Rendimiento y accesibilidad
@@ -283,7 +297,7 @@ invierte (verde = avanzar, coral = atrás).
 - Sin publicidad, sin compras, sin dark patterns; el único control de
   adultos está tras la puerta de 3 s.
 
-## 14. Voz pregrabada (0.6.0)
+## 14. Voz pregrabada (0.6.0 · voz Paulina desde 0.6.1)
 
 La voz del sistema sonaba robótica y **cambiaba según la tableta** (en
 Android 5 de gama baja es la peor parte del juego). La solución es
@@ -296,14 +310,22 @@ ejecución. Detalle completo en `docs/VOICE.md`.
 | Id determinista de cada frase | `services/voiceId.ts` |
 | Catálogo de frases hablables | `services/voiceLines.ts` (+ `content/speech.ts`) |
 | Reproductor con cola y respaldo | `services/voiceClips.ts` |
+| Cola que no corta + `onDone` | `services/voiceSequencer.ts` |
 | Generador (macos/ElevenLabs/OpenAI/Piper) | `scripts/generate-voice.mjs` |
 | Manifiesto (generado) | `content/voiceManifest.ts` |
 | Audios | `public/voice/<id>.mp3` |
 
 Garantías comprobadas por tests: el manifiesto solo anuncia audios que
-existen, no quedan frases sin audio, no hay audios huérfanos y ninguna
+existen, no quedan frases sin audio, no hay audios huérfanos, ninguna
 pantalla locuta frases literales fuera del catálogo (caerían al TTS sin
-que nadie lo notase).
+que nadie lo notase) y **la cola nunca corta una locución en curso**
+(`tests/voiceQueue.test.ts`).
+
+Estado actual: **303 MP3 con `Paulina (Español (México))`** (voz femenina
+es_MX del Mac, `provider: "macos"` en el manifiesto), generados con
+`--force --prune` y versionados en `public/voice/`. El juego no contacta
+con ningún servicio: los MP3 viajan en el bundle. Ojo con publicar: las
+voces de Apple valen para desarrollo (§3 de `docs/VOICE.md`).
 
 ## 12. Mantenimiento de la documentación
 

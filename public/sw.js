@@ -1,7 +1,11 @@
 /* Garabati — service worker (app shell, cache-first).
    La tipografía entra en el precache: el juego se ve igual sin red.
-   Los audios de la voz se guardan al usarlos (no se precargan 3 MB). */
-var CACHE = "garabati-v3";
+   Los audios de la voz se guardan al usarlos (no se precargan 3 MB).
+
+   v4: los MP3 se regeneraron con otra voz (Paulina) conservando los
+   nombres, así que la caché v3 guardaba audio viejo con 200 OK. Subir
+   la versión purga las cachés anteriores en `activate`. */
+var CACHE = "garabati-v4";
 var CORE = [
   "./",
   "./index.html",

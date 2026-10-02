@@ -18,7 +18,7 @@ export interface VoiceManifest {
 
 export const VOICE_MANIFEST: VoiceManifest = {
   provider: "macos",
-  voice: "Flo (Español (España))",
+  voice: "Paulina (Español (México))",
   ids: [
     "0-estrellas-34969812",
     "1-estrella-12151f84",
@@ -153,7 +153,7 @@ export const VOICE_MANIFEST: VoiceManifest = {
     "hacia-la-izquierda-0ec1f2e2",
     "has-desbloqueado-7af27903",
     "hasta-luego-vuelve-pronto-429c1c85",
-    "hola-soy-liro-tu-lapiz-magico-jugamos-f09ff6c9",
+    "hola-soy-lapi-tu-lapiz-magico-jugamos-c89f36ed",
     "i-de-isla-17d3c48e",
     "j-de-jirafa-480ed751",
     "k-de-koala-d24a8423",

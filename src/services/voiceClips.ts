@@ -26,10 +26,15 @@ export class ClipVoiceProvider implements VoiceProvider {
   private enabled = true;
   private rate = 1;
   private started = false;
+  /** Final de la locución en curso (lo llama `next()` al vaciar la cola). */
+  private done: (() => void) | null = null;
+  /** ¿Hay una locución en curso? (evita avisos dobles de `onerror`). */
+  private inLocution = false;
 
   /** Si un clip no puede sonar (autoplay bloqueado, fichero roto),
-      el servicio de audio reintenta estas frases con TTS. */
-  public onFallback: ((texts: string[]) => void) | null = null;
+      el servicio de audio reintenta estas frases con TTS y avisa del
+      final de la locución (`onDone`) para que la cola siga. */
+  public onFallback: ((texts: string[], onDone?: () => void) => void) | null = null;
 
   constructor() {
     for (var i = 0; i < this.manifest.ids.length; i++) {
@@ -55,28 +60,61 @@ export class ClipVoiceProvider implements VoiceProvider {
 
   /**
    * Reproduce una locución completa si TODAS sus frases tienen clip.
+   * @param onDone termina de sonar la última frase (o el TTS de respaldo).
    * @returns `true` si se hizo cargo (el llamante no debe usar el TTS).
    */
-  playAll(texts: string[]): boolean {
+  playAll(texts: string[], onDone?: () => void): boolean {
     if (!this.enabled || !this.available || !texts.length) return false;
     for (var i = 0; i < texts.length; i++) {
       if (!this.has(texts[i])) return false;
     }
     this.cancel();
     this.queue = texts.slice();
+    this.done = onDone || null;
+    this.inLocution = true;
     this.next();
     return true;
   }
 
-  speakAll(texts: string[]): void {
-    if (!this.playAll(texts)) {
-      if (this.onFallback) this.onFallback(texts);
+  speakAll(texts: string[], onDone?: () => void): void {
+    if (!this.playAll(texts, onDone)) {
+      if (this.onFallback) this.onFallback(texts, onDone);
+      else if (onDone) onDone();
     }
+  }
+
+  /** Termina la locución en curso (una sola vez). */
+  private finish(): void {
+    if (!this.inLocution) return;
+    this.inLocution = false;
+    var done = this.done;
+    this.done = null;
+    if (done) done();
+  }
+
+  /**
+   * Un clip no pudo sonar (autoplay bloqueado, fichero roto): las
+   * frases que quedan —incluida la actual— pasan al TTS de respaldo,
+   * que avisará del final. Así el niño nunca se queda sin voz a medias.
+   */
+  private handOff(text: string): void {
+    if (!this.inLocution) return; // aviso repetido: ya se salvó
+    this.inLocution = false;
+    var rest = [text].concat(this.queue);
+    this.queue = [];
+    var done = this.done;
+    this.done = null;
+    if (this.onFallback) this.onFallback(rest, done || undefined);
+    else if (done) done();
   }
 
   private next(): void {
     const text = this.queue.shift();
-    if (text === undefined) return;
+    if (text === undefined) {
+      // cola vacía: la locución completa terminó de sonar
+      this.finish();
+      return;
+    }
 
     var a = this.audio || (this.audio = this.createElement());
     var self = this;
@@ -84,8 +122,8 @@ export class ClipVoiceProvider implements VoiceProvider {
       self.next();
     };
     a.onerror = function () {
-      // El manifiesto prometía el fichero: si falta, se salta el resto.
-      self.next();
+      // El manifiesto prometía el fichero: se intenta salvar con TTS.
+      self.handOff(text);
     };
     a.src = this.base + voiceId(text) + ".mp3";
     try {
@@ -98,15 +136,11 @@ export class ClipVoiceProvider implements VoiceProvider {
       if (p && p.catch) {
         p.catch(function () {
           // Autoplay bloqueado (aún sin gesto del niño): al TTS y a seguir.
-          var rest = [text].concat(self.queue);
-          self.queue = [];
-          if (self.onFallback) self.onFallback(rest);
+          self.handOff(text);
         });
       }
     } catch (e) {
-      var rest2 = [text].concat(this.queue);
-      this.queue = [];
-      if (this.onFallback) this.onFallback(rest2);
+      this.handOff(text);
     }
   }
 
@@ -128,6 +162,8 @@ export class ClipVoiceProvider implements VoiceProvider {
 
   cancel(): void {
     this.queue = [];
+    this.inLocution = false;
+    this.done = null;
     if (this.audio) {
       try {
         this.audio.pause();

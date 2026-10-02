@@ -3,7 +3,7 @@
 
 export const PHRASES = {
   // --- presentación de recursos
-  welcome: "¡Hola! Soy Liro, tu lápiz mágico. ¿Jugamos?",
+  welcome: "¡Hola! Soy Lapi, tu lápiz mágico. ¿Jugamos?",
   knowLetter: "Esta es la letra",
   knowNumber: "Vamos a dibujar el número",
   watchMe: "Mírame. Yo lo hago así.",

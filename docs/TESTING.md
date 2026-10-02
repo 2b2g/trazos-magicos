@@ -10,7 +10,7 @@
 | **E2E sintético** | navegador + eventos Pointer sintéticos (`preview_evaluate`) | flujo completo real: perfiles → mapa → demo → trazado → recompensa → progreso |
 | **Checklist de dispositivo** | manual (README) | Android 5 WebView real, iPad, gama baja, offline, rechazo de palma |
 
-## 2. Suite unitaria (48 tests, todos en verde)
+## 2. Suite unitaria (59 tests, todos en verde)
 
 - `tests/engine.test.ts` — muestreo (extremos exactos, continuidad de la O,
   espaciado uniforme), evaluador (trazo perfecto, temblor infantil, trazo
@@ -24,7 +24,7 @@
   (un intento peor nunca resta), `completed` pegajoso, suma de estrellas,
   **JSON corrupto no rompe**, ajustes con defaults y merge, **localStorage
   bloqueado no rompe**.
-- `tests/mascot.test.ts` — **etapas de crecimiento de Liro** (0–4 ⭐, 5–19 ⭐,
+- `tests/mascot.test.ts` — **etapas de crecimiento de Lapi** (0–4 ⭐, 5–19 ⭐,
   20+ ⭐) y monotonía: más estrellas nunca hacen retroceder a la mascota.
 - `tests/brand.test.ts` — **coherencia del renombrado a Garabati**: manifest
   PWA, `<title>`, `package.json`, imagen Docker, caché del service worker y
@@ -35,6 +35,12 @@
   audio**, cero audios huérfanos, aceptación/rechazo del proveedor de clips y
   **ninguna frase literal fuera del catálogo** en las pantallas (esas caerían
   al TTS robótico sin que nadie lo notase).
+- `tests/voiceQueue.test.ts` — **la voz nunca se corta**: la frase que suena
+  termina antes de la siguiente, el orden se mantiene, `onDone` encadena sin
+  temporizadores (presentación → demo), el tope de cola descarta los avisos
+  viejos sin tocar el que suena, `cancel()` interrumpe y vacía (cambio de
+  pantalla), el perro guardián desatasca una locución que nunca avisa, y la
+  fachada `AudioService` no cancela lo que está sonando (sí en `stopVoice`).
 
 ## 3. Batería E2E en navegador (sesión de prueba intensiva)
 
