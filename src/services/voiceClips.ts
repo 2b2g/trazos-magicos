@@ -198,6 +198,10 @@ export class ClipVoiceProvider implements VoiceProvider {
    */
   unlock(): void {
     if (!this.available || this.started) return;
+    // se marca de inmediato: el desbloqueo global (`main.ts`) y el del
+    // saludo (`sayOnFirstGesture`) caen en el mismo toque y con la marca
+    // tardía se pediría el silencio dos veces
+    this.started = true;
     var self = this;
     try {
       // elemento aparte: el silencio no debe tocar el volumen de la voz
@@ -205,19 +209,15 @@ export class ClipVoiceProvider implements VoiceProvider {
       primer.src = this.base + "silencio.mp3";
       primer.volume = 0.01;
       var p: any = primer.play();
-      var done = function (): void {
-        self.started = true;
-      };
       if (p && p.then) {
-        p.then(done).catch(function () {
-          /* bloqueado: se reintenta en el próximo toque */
+        // si el navegador lo rechaza, se reintenta en el próximo toque
+        // (Chromium 37 no devuelve promesa: se asume desbloqueado)
+        p["catch"](function () {
+          self.started = false;
         });
-      } else {
-        // Chromium 37: play() no devuelve promesa; se asume desbloqueado
-        done();
       }
     } catch (e) {
-      /* noop */
+      this.started = false;
     }
   }
 }

@@ -17,7 +17,7 @@ La Web Speech API locuta en el dispositivo del niño. Eso trae tres problemas:
    despacio" ni "con una sonrisa".
 
 La solución de Garabati: **generar los audios una vez y empaquetarlos con el
-juego**. El guion es fijo y corto (**303 frases ≈ 4.700 caracteres ≈ 9 minutos**
+juego**. El guion es fijo y corto (**299 frases ≈ 4.700 caracteres ≈ 9 minutos**
 de audio), así que se puede pre-renderizar completo. La Web Speech API queda
 solo como **respaldo** si falta algún audio o el navegador no deja sonar un MP3.
 
@@ -45,14 +45,34 @@ audio.sayAll([...]) → VoiceSequencer     la que suena termina; la nueva espera
   (clip `ended`, TTS `onend`, perro guardián si un WebView nunca avisa). Con
   eso la actividad encadena *presentación → demostración* sin cortar nada.
 - El juego **nunca mezcla** clip y TTS en la misma locución.
+- **Cada pantalla da su frase al entrar**: el saludo "¿Quién quiere jugar?"
+  (pantalla de perfiles) y "Elige una actividad." (mapa) se piden una vez al
+  entrar, no en cada refresco; el mapa solo al abrirse de verdad, para no
+  repetirla al volver de una actividad. Ninguna pisa a la anterior: la cola
+  las encadena.
+- **La recompensa cuenta por pasos** (`services/voiceSteps.ts`): "Cuenta
+  conmigo." → "uno" → "dos" → … y **cada estrella aparece cuando su número
+  termina de sonar**, no con un temporizador propio. Es el patrón general
+  para(locución + visual) sincronizados: el siguiente paso arranca con el
+  `onDone` del anterior.
+- **La primera locución de la sesión espera al primer toque** (0.8.1): es la
+  saludación de la pantalla de perfiles, y pedirla al arrancar no funcionaba
+  (el navegador rechaza `play()` sin gesto → respaldo a la voz del sistema,
+  que es justo lo que se oía en la pantalla principal). Ahora
+  `audio.sayOnFirstGesture("¿Quién quiere jugar?")` engancha un solo disparo en
+  `touchstart`/`mousedown`/`keydown` (`services/firstGesture.ts`), desbloquea el
+  audio y pide la locución en ese mismo gesto: **con el clip de Paulina**. Si el
+  primer toque ya es elegir jugador, no se saluda; y con la voz silenciada la
+  espera se cancela.
 - **Voz del juego: `Paulina (Español (México))`** (`es_MX`, voz femenina de
-  macOS; la mascota, **Lapi**, es femenina). Los 303 MP3 del repositorio
+  macOS; la mascota, **Lapi**, es femenina). Los 299 MP3 del repositorio
   están generados con ella (`--rate 155 --pitch 1.06`, ver §5) y el manifiesto
   lo declara.
 - Los audios viven en `public/voice/` (~3 MB) y el service worker los cachea al
   usarlos, así que se juega sin conexión.
 - Los tests (`tests/voice.test.ts`) fallan si el manifiesto, los ficheros y el
-  catálogo de frases dejan de coincidir.
+  catálogo de frases dejan de coincidir, y `tests/firstGesture.test.ts` falla si
+  alguna locución se pide antes de un gesto del niño (la que se caía al TTS).
 
 ## 3. servicios que puedes usar
 
@@ -79,7 +99,7 @@ proyecto tiene que ser 100 % libre, usa **Piper**.
 > voz femenina `es_MX` de macOS, porque a oído es la que mejor encaja con una
 > mascota femenina (**Lapi**) y no cuesta nada. Los audios están versionados en
 > `public/voice/`, así que el juego no depende de ningún servicio en
-> ejecución. Antes de un lanzamiento comercial hay que **regenerar los 303 MP3
+> ejecución. Antes de un lanzamiento comercial hay que **regenerar los 299 MP3
 > con un proveedor con licencia de redistribución** (Piper, OpenAI, Azure,
 > Google, Polly o ElevenLabs): es un solo comando, el resto del juego no cambia.
 
@@ -96,7 +116,7 @@ npm run voice:audition
 # generar TODO con las voces del Mac (lo que usa el repositorio hoy;
 # Paulina + rate 155 + pitch 1.06 son ya los valores por defecto)
 npm run voice:generate -- --prune
-# rehacer los 303 audios desde cero (el comando canónico del repo)
+# rehacer los 299 audios desde cero (el comando canónico del repo)
 npm run voice:generate -- --voice "Paulina (Español (México))" --rate 155 \
   --pitch 1.06 --concurrency 4 --force --prune
 
@@ -130,7 +150,7 @@ sirve ya con la voz nueva y sin ninguna dependencia externa en ejecución.
 
 ### Ritmo y tono (por qué 155 y 1.06)
 
-Los 303 MP3 se generan con `--rate 155 --pitch 1.06`. No es casualidad: se
+Los 299 MP3 se generan con `--rate 155 --pitch 1.06`. No es casualidad: se
 barreron 19 combinaciones (`--rate` 145/155/165 × `--pitch` 1.00–1.24)
 midiendo cada muestra con `ffprobe` y analizando el audio con numpy
 (F0 por autocorrelación y reparto espectral). Lo que salió:
@@ -173,7 +193,7 @@ Tres hallazgos que no se oían a ojo:
 - **Si falta un audio**, esa locución completa pasa al TTS: el juego nunca se
   queda mudo ni a medias.
 - **Ajustes** muestra qué voz está activa: *"🎙️ Voz del juego: macos ·
-  Paulina (Español (México)) (303 audios)"* o *"voz del sistema"*.
+  Paulina (Español (México)) (299 audios)"* o *"voz del sistema"*.
 - **Peso**: 3,3 MB de MP3 mono 22 kHz a 48 kbps (~6 KB por segundo de voz). Se
   descargan bajo demanda y quedan en la caché del service worker; no se
   precargan.

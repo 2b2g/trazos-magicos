@@ -24,8 +24,7 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 
 ```bash
 npm install
-npm run dev        # desarrollo → http://localhost:5173
-npm test           # 71 tests unitarios (motor, storage, mascota, marca, voz, fidelidad)
+npm run dev        # desarrollo → http://localhost:5173  npm test           # 89 tests unitarios (motor, storage, mascota, marca, voz, primer gesto, recompensa, fidelidad)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
 ```
@@ -91,7 +90,7 @@ incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
 
 ## UI/UX para 3–6 años (decisiones aplicadas)
 
-- **Voz grabada, no robótica**: las **303 frases** del juego están
+- **Voz grabada, no robótica**: las **299 frases** del juego están
   pre-renderizadas en MP3 (`public/voice/`, ~3 MB) con la voz **Paulina**
   (es_MX) a 155 ppm y tono 1.06, y suenan igual en todas las
   tabletas, también sin conexión; la voz del sistema queda como respaldo. Ver
@@ -144,7 +143,7 @@ docker compose up -d --build
 - [ ] Offline: abrir 2 veces, activar modo avión, recargar (service worker)
 - [ ] "Añadir a pantalla de inicio" (PWA fullscreen landscape)
 - [ ] Voz grabada: suena igual en Android 5 y en iPad (ajustes muestra
-      "voz del juego: … (303 audios)"); 🐢 alarga el ritmo; apagar la voz la calla
+      "voz del juego: … (299 audios)"); 🐢 alarga el ritmo; apagar la voz la calla
 - [ ] Rechazo de palma: apoyar la mano mientras se traza con un dedo
 - [ ] Puerta parental: toque rápido NO abre ajustes; 3 s sí
 - [ ] Tipografía: se ve Fredoka One (redondeada), no la fuente de respaldo

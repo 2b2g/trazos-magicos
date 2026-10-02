@@ -21,6 +21,8 @@ tableta barata que en un iPad, y también sin conexión.
   2. 🔷 **Formas y patrones** — cruz, colina, triángulo, cuadrado, casita, estrella.
   3. 🔤 **El Abecedario Mágico** — 27 mayúsculas (con Ñ) por familias motoras.
   4. 🔢 **Los Números Mágicos** — del 0 al 9 contando estrellas.
+- Al entrar en el mapa, Lapi dice **"Elige una actividad."** y el nodo que toca
+  brilla: el niño solo tiene que elegir el que brilla.
 - El **nodo amarillo pulsante** es la siguiente actividad. Los candados se
   abren terminando la anterior (los dos primeros de cada mundo están libres).
 - Cada actividad sigue el mismo ritual, pensado para 3–6 años:
@@ -32,7 +34,9 @@ tableta barata que en un iPad, y también sin conexión.
      trazo. Nunca hay castigo ni "has fallado": solo "¡Casi! Inténtalo otra vez".
   5. Al terminar: **celebración** con confeti, estrellas que aparecen una a
      una (siempre al menos una) y recompensa con significado — "A de
-     Avión" o cinco estrellas contadas en voz alta.
+     Avión" o las estrellas contadas en voz alta: en los números, cada
+     estrella aparece justo cuando Lapi dice su número, así que se cuenta
+     con ella y no por delante de ella.
 - **Lapi crece contigo**: la mascota cambia de tamaño y gana un destello a
   partir de 5 estrellas y una corona a partir de 20. Es el progreso visible
   para quien todavía no lee números: un dibujo que mejora.
@@ -51,7 +55,7 @@ Mantén pulsada la **🔑** 3 segundos para entrar. Ahí puedes:
   la frase (activada por defecto). Desactívala para la marcha normal.
 - **🎙️ Voz del juego** (fila informativa): indica qué voz está sonando y
   cuántas frases grabadas hay, p. ej. *"macos · Paulina (Español (México))
-  (303 audios)"*. Si dice **"voz del sistema"** es que faltan audios y el
+  (299 audios)"*. Si dice **"voz del sistema"** es que faltan audios y el
   juego está usando la voz del dispositivo. Las locuciones **nunca se
   cortan**: si algo nuevo tiene que hablar, espera a que termine la frase
   en curso.

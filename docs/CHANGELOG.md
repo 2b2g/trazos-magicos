@@ -3,6 +3,94 @@
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
 
+## [0.8.1] — 2026-10-02 · Las pantallas ya hablan con la voz de Paulina y la recompensa cuenta con ella
+
+### Corregido
+- **El saludo de la pantalla de perfiles sonaba con la voz equivocada.**
+  "¿Quién quiere jugar?" se pedía 400 ms después de arrancar, **sin que el niño
+  hubiera tocado nada**: el navegador rechaza ese `play()` por la política de
+  autoplay, el MP3 no sonaba y la frase caía al respaldo de la Web Speech API —
+  la **voz del sistema**, que en muchos equipos (Mac) es masculina. Ahora el
+  saludo **espera al primer toque**: se desbloquea el audio y se pide la locución
+  dentro de ese mismo gesto, que es justo cuando el navegador deja sonar el clip.
+  Traza real en el navegador antes → después:
+  - antes: `play · ¿Quién quiere jugar?` → `audio:error` → `TTS-respaldo` →
+    `play-rechazado (NotAllowedError)`, a los ~550 ms del arranque;
+  - después: al primer toque, `play · ¿Quién quiere jugar?` (rate 0.88) →
+    `audio:playing` → `audio:ended` en 1,28 s, **sin `TTS-respaldo`** y sin
+    errores de red; al arrancar no se pide ninguna locución.
+- **El desbloqueo ya no pide el silencio dos veces**: `main.ts` y el saludo
+  caen en el mismo toque, y la marca de "ya desbloqueado" se ponía al
+  resolverse el MP3 (demasiado tarde). Ahora se marca de inmediato y solo se
+  reintenta si el navegador lo rechaza.
+- **El mapa tenía la boca muda**: pintaba el bocadillo "Elige una actividad."
+  pero nunca lo locutaba (el clip `elige-una-actividad-7e38d65c.mp3` existía y
+  no se usaba, herencia de la auditoría de 0.7.1). Ahora Lapi lo dice **al
+  entrar al mapa** con su clip, sincronizado con el texto que aparece en
+  pantalla, y **no lo repite** al volver de una actividad (`refresh()`), ni
+  al cambiar de pestaña de fase.
+- **El conteo de estrellas de la recompensa ya no se adelanta a la voz**:
+  las estrellas del conteo salían con un escalón fijo de **0,28 s** mientras
+  Lapi tardaba ~**0,78 s** en decir cada número, así que las cuatro ya estaban
+  en pantalla cuando todavía no había dicho "tres". Ahora cada estrella
+  aparece **cuando la voz termina de decir su número** ("uno" ⭐, "dos" ⭐⭐…),
+  medido en el navegador a **+16/+19/+51/+16 ms** del final de cada palabra.
+- **El ánimo se sortea una sola vez**: se sorteaban dos, así que la frase de
+  la pantalla y la frase locutada podían ser distintas ("¡Muy bien!" escrito,
+  "¡Fantástico!" dicho).
+
+### Cambiado
+- Si el primer toque del niño ya es **elegir jugador** (una tarjeta, un botón o
+  el campo del nombre), el saludo se omite: el niño ya sabe qué hacer y no hace
+  falta preguntárselo. Al volver a la pantalla principal con el audio ya
+  desbloqueado, el saludo suena de inmediato.
+- `Sfx.ensure()` ya no exige `window`: el desbloqueo se puede probar sin DOM.
+- `package.json` sube a **0.8.1**.
+
+### Añadido
+- **`src/services/firstGesture.ts`**: `FirstGestureGate`, la espera del primer
+  gesto del niño (`touchstart` / `mousedown` / `keydown`, en fase capture, un
+  solo disparo). Recibe el objeto al que engancharse, así que es lógica pura.
+- **`audio.sayOnFirstGesture(frase, onGesture?, onDone?)`**: saludo que espera al
+  toque, desbloquea el audio y dice la frase; la pantalla decide si ese toque
+  sirve para saludar, y puede cancelar la espera si la pantalla cambia.
+- **13 tests** (`tests/firstGesture.test.ts`): antes del gesto **no se locuta
+  nada** (ni clip ni TTS), el primer toque desbloquea y usa el clip, el disparo
+  es único, cualquier gesto cuenta, un toque que ya elige jugador no saluda, una
+  espera cancelada no suena ni deja escuchas, con la voz silenciada no suena, sin
+  clips la frase se dice entera con la voz del sistema, y **la bienvenida del
+  mapa espera su turno si el saludo sigue sonando** (nadie pisa a nadie).
+- **`src/services/voiceSteps.ts`**: `playVoiceSteps(speaker, steps)` encadena
+  la locución de la recompensa y ejecuta la acción de cada paso al terminar
+  (enseñar la siguiente estrella). Lógica pura, con las mismas garantías que
+  la cola de voz: nada se pisa y se corta si el niño se va.
+- **5 tests** (`tests/rewardSteps.test.ts`): la estrella aparece **solo** al
+  terminar su número, nunca antes; el orden de pasos se respeta; las frases
+  vacías se saltan sin romper la cadena; si el niño se va a mitad no aparece
+  ninguna estrella a destiempo → **89 tests**.
+
+### Notas
+- Sin MP3 nuevos: el catálogo sigue con **299 frases** y los audios no cambian
+  ("Elige una actividad." ya estaba grabado desde 0.6.0, solo faltaba pedirlo;
+  los números sueltos, de "uno" a "diez", también estaban: el conteo deja de
+  ser un único clip para poder enseñar estrella por estrella).
+- Documentación: el recuento de la voz se había quedado en “303 frases” en
+  README, MANUAL, VOICE, ARCHITECTURE y el generador desde 0.8.0 (el manifiesto
+  tiene 299); corregido al número real.
+- Verificado en el navegador con la voz instrumentada: saludo de perfiles
+  (1,28 s completos) y bienvenida del mapa (1,65 s completos) suenan con clip,
+  uno detrás del otro, **0 locuciones al TTS y 0 cortes**; el mapa no repite la
+  bienvenida al volver de una actividad. En la recompensa del número 4 las
+  cuatro estrellas caen a **+16/+19/+51/+16 ms** del final de
+  "uno/dos/tres/cuatro" y todas están en pantalla antes de que Lapi diga
+  "4 estrellas"; con la voz silenciada el conteo conserva el escalón visual de
+  0,28 s.
+  El service worker se queda en `garabati-v6` (los assets llevan hash y el
+  `index.html` es network-first, así que el arreglo llega sin purgar cachés).
+- Queda pendiente de la auditoría de voz anterior (no lo pedía este arreglo):
+  "Mírame. Yo lo hago así." es más corta que la demostración de los trazos
+  largos.
+
 ## [0.8.0] — 2026-10-02 · Letras y números fieles al trazo, con pauta de escritura
 
 ### Corregido

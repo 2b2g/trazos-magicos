@@ -183,9 +183,28 @@ export function renderProfiles(
   screen.appendChild(formWrap);
   host.root.appendChild(screen);
 
-  setTimeout(function () {
-    audio.say(PHRASES.chooseProfile);
-  }, 400);
+  /* El saludo "¿Quién quiere jugar?" NO se pide al arrancar: sin un
+     toque previo el navegador rechaza el MP3 y la frase cae a la voz
+     del sistema (en muchos equipos, una voz masculina: se oía la voz
+     equivocada en la pantalla principal). Se pide en el **primer
+     gesto**, ya con el audio desbloqueado, para que suene el clip de
+     Paulina. Si ese primer toque ya es elegir jugador, el niño sabe
+     qué hacer y el saludo sobra. */
+  function isAction(ev?: any): boolean {
+    var node: any = ev ? ev.target : null;
+    while (node && node !== screen) {
+      var tag = String(node.tagName || "").toLowerCase();
+      if (tag === "button" || tag === "input" || tag === "select") return true;
+      if (String(node.className || "").indexOf("profile-card") >= 0) return true;
+      node = node.parentNode;
+    }
+    return false;
+  }
+
+  audio.sayOnFirstGesture(PHRASES.chooseProfile, function (ev?: any): boolean {
+    // false = este toque ya elegía jugador: no se le pregunta nada
+    return !isAction(ev);
+  });
 
   return screen;
 }

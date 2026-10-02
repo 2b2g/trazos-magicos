@@ -1,7 +1,7 @@
 {
   "name": "garabati",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Garabati — videojuego web de grafomotricidad, preescritura y escritura inicial para niños de 3 a 6 años",
   "type": "module",
   "scripts": {

@@ -222,6 +222,15 @@ export function renderMap(
   updateStars();
   buildGrid();
 
+  /* Lapi da la bienvenida con voz: el bocadillo ya dice "Elige una
+     actividad." y el niño también lo oye (el clip ya existía, pero
+     nadie lo pedía: el mapa era la única pantalla muda).
+     Se pide al **entrar** al mapa, aquí, donde la pantalla se crea: el
+     `refresh()` de volver de una actividad no lo repite.
+     Y no pisa al saludo de la pantalla de perfiles: si aún suena, la
+     cola de voz espera su turno en vez de cortarlo (`voiceSequencer`). */
+  audio.say(PHRASES.chooseActivity);
+
   (screen as any).refresh = function () {
     updateStars();
     buildGrid();

@@ -49,7 +49,32 @@ Elige nodo (mapa)
                         cada fallo relaja umbrales (ver §4)
   → finishResource: evaluateResource → estrellas 1..3 → reward-layer
   → store.recordAttempt (monótono) → seguir/otra vez
+  → locución de la recompensa por PASOS (services/voiceSteps.ts):
+      ánimo → "A de Avión" | "Cuenta conmigo." → uno ⭐ → dos ⭐⭐ → …
+      → "4 estrellas"   (cada estrella aparece al terminar su número)
 ```
+
+### 2.1 La recompensa cuenta con la voz (0.8.1)
+
+Las estrellas del conteo **no salen por su cuenta**: cada una seenseña
+cuando la voz termina de decir su número, así que contar con Lapi y
+contar en pantalla son lo mismo (antes iban con un escalón fijo de 0,28 s
+mientras la voz tardaba ~0,78 s por número: el conteo sacaba tres veces de
+ventaja a la locución).
+
+- **`services/voiceSteps.ts`**: `playVoiceSteps(speaker, steps, {isAlive})`
+  encadena frases y ejecuta la acción de cada una al terminar. Es lógica
+  pura (recibe el locutor), como `voiceSequencer.ts`, y hereda sus dos
+  garantías: **nada se pisa** (el siguiente paso espera al anterior) y **se
+  corta sola** si el niño se va o silencia el juego.
+- **Un paso por número**: antes el conteo era un único clip ("uno, dos,
+  tres"); ahora cada número es su propio paso y su estrella aparece en su
+  `onDone`. Todos los números tienen clip (`content/phrases.ts`), así que no
+  hace falta regenerar audios.
+- **Sin voz** no hay ritmo al que pegarse: se mantiene el escalón visual de
+  0,28 s (`audio.voiceEnabled` lo consulta la propia recompensa).
+- El ánimo se sortea **una sola vez** para la pantalla y para la voz: antes
+  se sorteaban dos y el niño leía una frase mientras oía otra.
 
 ## 3. Coordenadas y muestreo
 
@@ -125,6 +150,12 @@ sayAll(["¡Muy bien!", "Hacia abajo."])
                (es-ES/es-419, rate 0.72/0.9, pitch 1.3/1.15 con ajuste 🐢)
 ```
 
+- **Cada pantalla habla al entrar, una sola vez**: la de perfiles pide su
+  saludo (`sayOnFirstGesture`, ver abajo) y la del mapa pide "Elige una
+  actividad." en `renderMap` —no en `refresh()`, que se dispara al volver de
+  una actividad— para que la frase que suena sea la misma que está en el
+  bocadillo y no se repita. Como todo pasa por `sayAll`, si el saludo
+  anterior sigue sonando la bienvenida **espera** su turno.
 - **Ninguna locución se corta** (`services/voiceSequencer.ts`, 1.0): la voz
   es la instrucción y una frase a medias no comunica nada. Lo que llega
   mientras algo suena se pone en cola (tope 2; si se acumula se descartan
@@ -146,11 +177,20 @@ sayAll(["¡Muy bien!", "Hacia abajo."])
 - **Manifiesto compilado** (`content/voiceManifest.ts`, generado): lista de
   ids disponibles. Al ir dentro del bundle no hay petición extra y el juego
   sabe al instante si puede usar el clip (sin esperas ni 404).
-- **Audios** en `public/voice/` (~3 MB, 303 frases): el service worker los
+- **Audios** en `public/voice/` (~3 MB, 299 frases): el service worker los
   cachea al usarlos (`/voice/` cache-first); no se precargan.
 - **Desbloqueo** (política de autoplay): en el primer toque suena
   `voice/silencio.mp3` (100 ms, volumen mínimo) para habilitar el elemento;
   si el navegador bloquea un clip, `onFallback` continúa con TTS.
+- **La primera locución de la sesión espera al primer toque**
+  (`sayOnFirstGesture` + `services/firstGesture.ts`, 0.8.1): pedirla al
+  arrancar no sirve, porque el navegador rechaza el `play()` y la frase
+  cae a la voz del sistema. La espera se engancha en `touchstart` /
+  `mousedown` / `keydown` (fase capture), se dispara **una sola vez**,
+  desbloquea el audio y pide la locución en ese mismo gesto; la pantalla
+  puede cancelarla (`sayOnFirstGesture` devuelve el `cancel`) o descartar
+  ese toque si ya era una elección del niño (`onGesture` → `false`). Con
+  el audio ya desbloqueado (segunda visita), el saludo sale inmediato.
 - **Ajuste 🐢 "voz pausada"** (por defecto): `playbackRate` 0.88 en los clips
   (los MP3 ya se graban a 155 ppm y tono 1.06, más lento que un locutor
   adulto: medido, 112 palabras/min dentro del juego).
@@ -336,6 +376,8 @@ ejecución. Detalle completo en `docs/VOICE.md`.
 | Catálogo de frases hablables | `services/voiceLines.ts` (+ `content/speech.ts`) |
 | Reproductor con cola y respaldo | `services/voiceClips.ts` |
 | Cola que no corta + `onDone` | `services/voiceSequencer.ts` |
+| Espera del primer toque (autoplay) | `services/firstGesture.ts` |
+| Locución por pasos (recompensa) | `services/voiceSteps.ts` |
 | Generador (macos/ElevenLabs/OpenAI/Piper) | `scripts/generate-voice.mjs` |
 | Manifiesto (generado) | `content/voiceManifest.ts` |
 | Audios | `public/voice/<id>.mp3` |
@@ -346,12 +388,19 @@ pantalla locuta frases literales fuera del catálogo (caerían al TTS sin
 que nadie lo notase) y **la cola nunca corta una locución en curso**
 (`tests/voiceQueue.test.ts`).
 
-Estado actual: **303 MP3 con `Paulina (Español (México))`** (voz femenina
+Estado actual: **299 MP3 con `Paulina (Español (México))`** (voz femenina
 es_MX del Mac, `provider: "macos"` en el manifiesto), generados con
 `--rate 155 --pitch 1.06 --force --prune` y versionados en `public/voice/`.
 El juego no contacta con ningún servicio: los MP3 viajan en el bundle. Ojo
 con publicar: las voces de Apple valen para desarrollo (§3 de
 `docs/VOICE.md`).
+
+**La primera frase se oía con otra voz (corregido en 0.8.1)**: el saludo de
+la pantalla de perfiles se pedía solo, sin gesto previo, y el navegador
+rechazaba el MP3 → respaldo a la Web Speech API del dispositivo. Con eso la
+primera locución de la sesión (la que más se oye al arrancar) era la única
+que no usaba la voz del juego. Ahora el saludo **espera al primer toque**
+(`services/firstGesture.ts`) y suena con el clip como todas las demás.
 
 **Ritmo y tono** (0.7.1): se barrieron 19 combinaciones de `--rate` ×
 `--pitch` midiendo duración, F0 y reparto espectral de cada muestra

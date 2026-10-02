@@ -15,6 +15,7 @@
 import { VoiceProvider } from "./voiceTypes";
 import { ClipVoiceProvider } from "./voiceClips";
 import { VoiceSequencer } from "./voiceSequencer";
+import { FirstGestureGate, GestureTarget } from "./firstGesture";
 
 export type { VoiceProvider };
 
@@ -143,6 +144,11 @@ class TtsProvider {
   }
 }
 
+/** Devolución vacía: "nada que cancelar, nada que esperar". */
+function noop(): void {
+  /* noop */
+}
+
 /* ---------- efectos: WebAudio con desbloqueo táctil + fallback ---------- */
 
 class Sfx {
@@ -152,7 +158,9 @@ class Sfx {
   private ensure(): any {
     if (!this.enabled) return null;
     if (!this.ctx) {
-      var AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      // sin `window` (tests) no hay contexto: se sigue sin efectos
+      var w: any = typeof window === "undefined" ? {} : window;
+      var AC = w.AudioContext || w.webkitAudioContext;
       if (!AC) return null;
       try {
         this.ctx = new AC();
@@ -263,6 +271,9 @@ class TtsVoiceProvider implements VoiceProvider {
  *   encadenar pantallas sin temporizadores.
  * - `stopVoice()` → la única interrupción legítima (salir de pantalla o
  *   silenciar).
+ * - `sayOnFirstGesture()` → saludo que espera al primer toque: es la
+ *   única forma de que el primer MP3 de la sesión suene con la voz del
+ *   juego y no con la del sistema.
  * - `sfx.*` → efectos procedurales WebAudio (sin ficheros: offline y sin
  *   descargas extra).
  */
@@ -273,13 +284,31 @@ export class AudioService {
   private systemVoice: VoiceProvider;
   private voiceOn = true;
   private sequencer: VoiceSequencer;
+  /** Espera del primer toque del niño (`services/firstGesture.ts`). */
+  private gate: FirstGestureGate;
+  /** El niño ya tocó alguna vez: el audio está desbloqueado. */
+  private unlocked = false;
+  /** Cancelación de la espera viva, si la hay. */
+  private pendingGesture: (() => void) | null = null;
 
   /**
-   * @param providers proveedores alternativos (tests sin navegador).
+   * @param providers proveedores alternativos (tests sin navegador) y
+   *   `gestureTarget` (doble de `window` en los tests del saludo).
    */
-  constructor(providers?: { clips?: ClipSpeaker; system?: VoiceProvider }) {
+  constructor(providers?: {
+    clips?: ClipSpeaker;
+    system?: VoiceProvider;
+    gestureTarget?: GestureTarget | null;
+  }) {
     this.clips = (providers && providers.clips) || new ClipVoiceProvider();
     this.systemVoice = (providers && providers.system) || new TtsVoiceProvider(this.tts);
+    this.gate = new FirstGestureGate(
+      (providers && providers.gestureTarget !== undefined
+        ? providers.gestureTarget
+        : typeof window === "undefined"
+          ? null
+          : (window as unknown as GestureTarget))
+    );
 
     var self = this;
     // si un clip no puede sonar, la locución continúa con el TTS
@@ -335,7 +364,72 @@ export class AudioService {
     this.voiceOn = on;
     this.clips.setEnabled(on);
     this.systemVoice.setEnabled(on);
-    if (!on) this.sequencer.cancel();
+    if (!on) {
+      this.sequencer.cancel();
+      // un saludo en espera no suena con la voz silenciada
+      this.pendingGesture = null;
+      this.gate.cancel();
+    }
+  }
+
+  /** ¿El niño ya ha tocado la pantalla? (audio desbloqueado). */
+  get hasGesture(): boolean {
+    return this.unlocked;
+  }
+
+  /**
+   * ¿Está la voz activada? (los padres pueden silenciarla). Lo consulta
+   * la recompensa para saber si puede pegarse al ritmo de la locución o
+   * si tiene que mostrarla ella misma (`activity.ts`).
+   */
+  get voiceEnabled(): boolean {
+    return this.voiceOn;
+  }
+
+  /**
+   * Locución que **espera al primer toque del niño** (política de
+   * autoplay). Pedirla antes de tiempo no sirve de nada: el navegador
+   * rechaza el MP3 y la frase cae a la voz del sistema —la primera
+   * locución de la sesión sonaba con otra voz que la del juego—.
+   *
+   * Al primer gesto se desbloquea el audio y la frase se dice en el
+   * mismo gesto (con el clip de Paulina). Si el niño ya había tocado
+   * antes, se dice al instante.
+   *
+   * @param onGesture chance que la pantalla hace al niño: si devuelve
+   *   `false` (p. ej. porque ese toque ya elegía jugador), el saludo se
+   *   omite; si no, la frase se dice.
+   * @returns cancelar la espera (la pantalla cambió antes del gesto).
+   */
+  sayOnFirstGesture(
+    text: string,
+    onGesture?: (ev?: any) => boolean,
+    onDone?: () => void
+  ): () => void {
+    var self = this;
+    if (!this.voiceOn) {
+      if (onDone) onDone();
+      return noop;
+    }
+    if (this.unlocked) {
+      this.say(text, onDone);
+      return noop;
+    }
+    var cancel: () => void = function (): void {
+      if (self.pendingGesture !== cancel) return; // otra espera manda
+      self.pendingGesture = null;
+      self.gate.cancel();
+    };
+    this.pendingGesture = cancel;
+    this.gate.arm(function (ev?: any): void {
+      if (self.pendingGesture !== cancel) return;
+      self.pendingGesture = null;
+      self.unlock();
+      // ¿el niño ya está tocando algo que hace algo? entonces no saluda
+      if (onGesture && onGesture(ev) === false) return;
+      self.say(text, onDone);
+    });
+    return cancel;
   }
 
   /** Voz pausada para peques (ajuste 🐢, activada por defecto):
@@ -351,6 +445,7 @@ export class AudioService {
 
   /** Desbloqueo de audio en el primer toque (autoplay de Chrome). */
   unlock(): void {
+    this.unlocked = true;
     this.sfx.unlock();
     this.clips.unlock();
   }

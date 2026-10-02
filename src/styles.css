@@ -1059,6 +1059,17 @@ body {
 
 .count-objects span {
   margin: 1vmin;
+}
+
+/* Las estrellas del conteo no salen por su cuenta: cada una aparece
+   cuando la voz termina de decir su número (`activity.ts`), para que
+   contar con Lapi y contar en pantalla sean lo mismo. */
+.count-objects .count-obj {
+  visibility: hidden;
+}
+
+.count-objects .count-obj--on {
+  visibility: visible;
   -webkit-animation: pop-star 0.45s cubic-bezier(0.2, 1.6, 0.45, 1) both;
   animation: pop-star 0.45s cubic-bezier(0.2, 1.6, 0.45, 1) both;
 }

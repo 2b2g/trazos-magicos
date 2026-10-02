@@ -10,7 +10,7 @@
 | **E2E sintético** | navegador + eventos Pointer sintéticos (`preview_evaluate`) | flujo completo real: perfiles → mapa → demo → trazado → recompensa → progreso |
 | **Checklist de dispositivo** | manual (README) | Android 5 WebView real, iPad, gama baja, offline, rechazo de palma |
 
-## 2. Suite unitaria (71 tests, todos en verde)
+## 2. Suite unitaria (89 tests, todos en verde)
 
 - `tests/engine.test.ts` — muestreo (extremos exactos, continuidad de la O,
   espaciado uniforme), evaluador (trazo perfecto, temblor infantil, trazo
@@ -49,6 +49,27 @@
   viejos sin tocar el que suena, `cancel()` interrumpe y vacía (cambio de
   pantalla), el perro guardián desatasca una locución que nunca avisa, y la
   fachada `AudioService` no cancela lo que está sonando (sí en `stopVoice`).
+- `tests/firstGesture.test.ts` — **el saludo espera al primer toque** (13
+  tests, 0.8.1): antes del gesto **no se locuta nada** (ni clip ni TTS, que
+  era justo el bug: la primera frase caía a la voz del sistema), el primer
+  toque desbloquea el audio y dice el saludo **con el clip** (el TTS de
+  respaldo no suena), el disparo ocurre una sola vez, cuentan `touchstart`,
+  `mousedown` y `keydown`, un toque que ya elegía jugador no saluda, una
+  espera cancelada no suena ni deja escuchas colgadas, con la voz silenciada
+  no suena, al volver a la pantalla con el audio ya desbloqueado el saludo
+  es inmediato, sin clips la frase se dice entera con la voz del sistema, y
+  **la bienvenida del mapa espera su turno si el saludo sigue sonando**
+  (nadie pisa a nadie, ninguna cae al TTS).
+  Además, la espera por sí sola sin DOM: no se arma sin destino de gestos, el
+  callback recibe el evento original y se desengancha, y armar dos veces deja
+  solo la última espera viva.
+- `tests/rewardSteps.test.ts` — **las estrellas cuentan con la voz** (5 tests,
+  0.8.1): la estrella solo aparece cuando termina su número y nunca antes, el
+  orden de los pasos se respeta, las frases vacías se saltan sin romper la
+  cadena, si el niño se va a mitad no aparece ninguna estrella a destiempo y
+  sin pasos no se dice nada (pero el final se avisa igual). Bloquea el defecto
+  de la recompensa: el conteo visual con escalón fijo de 0,28 s contra los
+  ~0,78 s por número de la locución.
 
 ## 3. Batería E2E en navegador (sesión de prueba intensiva)
 
@@ -76,6 +97,9 @@ dedo con PointerEvents sintéticos y leyendo localStorage como oráculo.
 | 17 | **Letra A con la geometría nueva**: 3 trazos, barra cruzada en las diagonales, 3 ⭐, precisión 98 %, "A de Avión" | ✅ (0.8.0) |
 | 18 | **Pauta de 4 líneas dibujada** detrás del grafema, medidas en el lienzo: 0,16 / 0,50 / 0,67 / 0,84 | ✅ (0.8.0) |
 | 19 | **Recorrido de voz completo** (perfiles → mapa → letra → número → recompensa con conteo), 17 clips: ninguno cortado, ninguno al TTS salvo el saludo previo al primer toque | ✅ (0.7.1) |
+| 20 | **Saludo de perfiles con la voz buena**: al arrancar no se pide nada; al primer toque en zona neutra suena `¿Quién quiere jugar?` (clip, rate 0.88, 1,28 s completos) **sin `TTS-respaldo`** ni errores; al primer toque en una tarjeta no se saluda y se abre el formulario; al volver de la pantalla principal el saludo es inmediato | ✅ (0.8.1) |
+| 21 | **El mapa habla al entrar**: `Elige una actividad.` con su clip (1,65 s completos), sincronizada con el bocadillo, sin repetir al volver de una actividad (botón casa) ni al cambiar de fase; después la actividad encadena su presentación sin cortes | ✅ (0.8.1) |
+| 22 | **Recompensa del número 4**: las 4 estrellas caen a +16/+19/+51/+16 ms del final de "uno/dos/tres/cuatro" y están todas antes de "4 estrellas"; el ánimo escrito y el locutado coinciden; con la voz silenciada el conteo mantiene el escalón de 0,28 s | ✅ (0.8.1) |
 
 ## 4. Hallazgos y correcciones de la batería
 
@@ -85,6 +109,9 @@ dedo con PointerEvents sintéticos y leyendo localStorage como oráculo.
 4. **`setPointerCapture` NotFoundError** con punteros que sueltan antes del capture (WebViews antiguos) → try/catch defensivo.
 5. **Geometría** — zigzag con discontinuidad en `phase=0.5` (salto 86 px) y estrella de 4 puntas con un segmento mal apuntado (salto 124 px). El nuevo test de continuidad los habría cazado desde el principio; ahora forma parte de la suite.
 6. **Fidelidad de las letras (0.8.0)** — al rehacer el contenido con la caja de escritura compartida, la propia suite nueva encontró tres fallos reales: la barra de la A se salía 50 px de las diagonales, la "~" de la Ñ flotaba dentro de la caja de la N y el bucle del 6 empezaba 114 px lejos de donde llegaba el palito. Con `guideLines` y la métrica única, los tests de caja, uniones y curvas exactas los impiden volver.
+7. **Voz de la primera pantalla (0.8.1)** — el saludo se pedía 400 ms después de arrancar, sin gesto: el navegador rechazaba el MP3 (`NotAllowedError`) y la frase caía a la Web Speech API del dispositivo (voz del sistema, masculina en muchos Mac). Traza antes: `play` → `audio:error` → `TTS-respaldo` → `play-rechazado`. Después: sin locución al arrancar y, al primer toque, `play` (rate 0,88) → `playing` → `ended` en 1,28 s, sin respaldo. Además el silencio de desbloqueo se pedía dos veces (marca puesta al resolverse el MP3) y `Sfx.ensure()` exigía `window`, lo que impedía probar el desbloqueo sin DOM.
+8. **El mapa era la única pantalla muda (0.8.1)** — pintaba "Elige una actividad." pero nunca lo locutaba, aunque el clip existía desde 0.6.0: era un audio huérfano de facto. Al pedirlo al entrar (y no en `refresh()`) el niño oye dónde puede tocar y la frase queda sincronizada con el bocadillo; el orden con el saludo de perfiles lo fija la cola de voz, comprobado con un test donde el saludo sigue sonando.
+9. **El conteo de la recompensa iba tres veces por delante de la voz (0.8.1)** — las estrellas salían con `animation-delay` de 0,28 s en bloque, mientras Lapi tardaba ~0,78 s por número: las cuatro ya estaban en pantalla antes de que dijera "tres". Ahora la locución va por pasos (`services/voiceSteps.ts`) y cada estrella se enseña en el `onDone` de su número. Midiendo el DOM y el audio en el mismo reloj: +16/+19/+51/+16 ms. De paso, el ánimo se sorteaba dos veces (el texto y la voz podían no ser la misma frase).
 
 ## 5. Cómo reproducir la batería sintética
 

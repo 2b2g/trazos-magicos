@@ -71,7 +71,7 @@ const has = (k) => args[k] !== undefined && args[k] !== false;
 const val = (k, d) => (has(k) ? String(args[k]) : d);
 
 const PROVIDER = val("provider", "macos");
-/* Ritmo y tono que suenan los 303 MP3 del repositorio (ver docs/VOICE.md §5):
+/* Ritmo y tono que suenan los 299 MP3 del repositorio (ver docs/VOICE.md §5):
    155 es el bucket natural de `say` y 1.06 baja ~10 Hz la F0 de Paulina
    (183 → 173 Hz) sin perder energía en la banda de inteligibilidad. */
 const RATE = Number(val("rate", 155));

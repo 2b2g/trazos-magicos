@@ -10,6 +10,7 @@
 
 import { el, buzz } from "../util/dom";
 import { audio } from "../services/audio";
+import { playVoiceSteps, VoiceStep } from "../services/voiceSteps";
 import { ProfileStore, Settings } from "../services/storage";
 import {
   ResourceDef,
@@ -447,7 +448,10 @@ export function renderActivity(
       })
     );
 
-    layer.appendChild(el("div", { class: "phrase", text: randomCheer() }));
+    // Un solo ánimo para la pantalla y para la voz: antes se sortearan
+    // dos y el niño leía una frase mientras oía otra.
+    var cheer = randomCheer();
+    layer.appendChild(el("div", { class: "phrase", text: cheer }));
     layer.appendChild(
       el("div", {
         class: "subtitle",
@@ -455,8 +459,20 @@ export function renderActivity(
       })
     );
 
-    // Locución de la recompensa por segmentos (cada uno con audio propio)
-    var spoken: string[] = [randomCheer()];
+    /* Locución de la recompensa PASO A PASO: cada paso espera al
+       anterior (nunca se pisan) y, al terminar, puede mostrar algo. Así
+       lo visual va pegado a la voz. Antes era una sola `sayAll` y las
+       estrellas del conteo aparecían con un escalón fijo de 0,28 s
+       mientras la voz tardaba ~0,78 s por número: el conteo se adelantaba
+       tres veces a la locución. */
+    var steps: VoiceStep[] = [{ text: cheer }];
+
+    // Estrellas que se van mostrando de una en una (las cuenta la voz).
+    var objEls: HTMLElement[] = [];
+    function revealObject(k: number): void {
+      var node = objEls[k];
+      if (node) node.className = "count-obj count-obj--on";
+    }
 
     // Letra → significado (FDD §18) / Número → cantidad (FDD §23–25)
     if (resource.kind === "letter" && resource.meaningEmoji) {
@@ -464,26 +480,52 @@ export function renderActivity(
       layer.appendChild(
         el("div", { class: "phrase", text: resource.char + " de " + resource.meaningWord })
       );
-      spoken.push(letterPhrase(resource));
+      steps.push({ text: letterPhrase(resource) });
     } else if (resource.kind === "number" && resource.countEmoji && resource.count) {
       var n = resource.count;
       var objs = el("div", { class: "count-objects" });
       for (var i = 0; i < n; i++) {
-        (function (k: number) {
-          var sp = el("span", { text: resource.countEmoji as string });
-          sp.style.animationDelay = k * 0.28 + "s";
-          objs.appendChild(sp);
-        })(i);
+        // ocultas de partida: cada una aparece cuando la voz la nombra
+        var sp = el("span", { class: "count-obj", text: resource.countEmoji as string });
+        objs.appendChild(sp);
+        objEls.push(sp);
       }
       layer.appendChild(objs);
       var words: string[] = [];
       for (i = 0; i < n; i++) words.push(NUMBER_WORDS[i + 1]);
       if (words.length) {
         // el cero no se cuenta: solo se dice "0 estrellas"
-        spoken.push(PHRASES.countWithMe);
-        spoken.push(words.join(", "));
+        steps.push({ text: PHRASES.countWithMe });
+        // con voz: un paso por número y la estrella aparece al terminar
+        // su palabra ("uno" ⭐, "dos" ⭐⭐...), que es lo que hace que el
+        // niño cuente con la voz y no por delante de ella.
+        // sin voz no hay ritmo al que pegarse: escalón visual de 0,28 s.
+        var conVoz = audio.voiceEnabled;
+        for (var w = 0; w < words.length; w++) {
+          (function (k: number) {
+            var paso: VoiceStep = { text: words[k] };
+            if (conVoz) {
+              paso.then = function () {
+                revealObject(k);
+              };
+            }
+            steps.push(paso);
+          })(w);
+        }
+        if (!conVoz) {
+          for (var k2 = 0; k2 < objEls.length; k2++) {
+            later(
+              k2 * 280,
+              (function (k: number) {
+                return function () {
+                  revealObject(k);
+                };
+              })(k2)
+            );
+          }
+        }
       }
-      spoken.push(countPhrase(resource));
+      steps.push({ text: countPhrase(resource) });
       layer.appendChild(el("div", { class: "phrase", text: words.length + " " + (resource.countEmoji || "") }));
     }
 
@@ -518,7 +560,11 @@ export function renderActivity(
     screen.appendChild(layer);
     audio.sfx.unlockPrize();
     later(500, function () {
-      audio.sayAll(spoken);
+      playVoiceSteps(audio, steps, {
+        isAlive: function () {
+          return alive;
+        },
+      });
     });
   }
 
