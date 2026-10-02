@@ -1127,6 +1127,19 @@ body {
   transform: translateY(3px);
 }
 
+/* fila solo informativa (diagnóstico para adultos) */
+.switch-row--info {
+  cursor: default;
+  background: #eef6ff;
+  border-color: #d7e8ff;
+  font-size: 3.4vmin;
+}
+
+.switch-row--info:active {
+  -webkit-transform: none;
+  transform: none;
+}
+
 .switch {
   position: relative;
   width: 100px;

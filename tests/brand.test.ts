@@ -30,7 +30,7 @@ describe("identidad de Garabati", () => {
   });
 
   it("la caché del service worker lleva el nombre nuevo", () => {
-    expect(read("public/sw.js")).toContain("garabati-v2");
+    expect(read("public/sw.js")).toMatch(/garabati-v\d+/);
   });
 
   it("no queda ninguna mención al nombre antiguo en la app", () => {

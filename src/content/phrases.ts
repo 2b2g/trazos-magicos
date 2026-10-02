@@ -32,6 +32,8 @@ export const PHRASES = {
   // --- navegación
   chooseProfile: "¿Quién quiere jugar?",
   chooseActivity: "Elige una actividad.",
+  /** Aviso amable al tocar un nodo bloqueado (nunca un regaño). */
+  lockedNode: "Primero termina el de antes. ¡Tú puedes!",
   goodbye: "¡Hasta luego! ¡Vuelve pronto!",
 } as const;
 

@@ -29,6 +29,7 @@ import {
   STRICT_EVAL,
 } from "../engine/evaluator";
 import { PHRASES, randomCheer, NUMBER_WORDS } from "../content/phrases";
+import { countPhrase, letterPhrase } from "../content/speech";
 import { mascotEl, setMascotMood, MascotMood } from "../ui/mascot";
 import { skyDeco } from "../ui/decor";
 import { confetti, starRow } from "../util/fx";
@@ -217,11 +218,25 @@ export function renderActivity(
     audio.say(text);
   }
 
+  /**
+   * Locución por segmentos: cada frase del contenido es una pieza
+   * pre-generable, así que se hablan una tras otra (con respiro entre
+   * ellas) en vez de concatenar cadenas nuevas.
+   */
+  function sayParts(parts: string[]): void {
+    var clean: string[] = [];
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i]) clean.push(parts[i]);
+    }
+    if (!clean.length) return;
+    bubbleEl.textContent = clean.join(" ");
+    audio.sayAll(clean);
+  }
+
   function start(): void {
     phase = "present";
     promptEl.textContent = resource.label;
-    var intro = (resource.speech && resource.speech.join(" ")) || resource.label;
-    say(intro);
+    sayParts(resource.speech && resource.speech.length ? resource.speech : [resource.label]);
     later(1600, playDemoSequence);
   }
 
@@ -256,7 +271,7 @@ export function renderActivity(
     updatePrompt();
     updateDots();
     attachInput();
-    say(PHRASES.nowYou + " " + strokeHint());
+    sayParts([PHRASES.nowYou, strokeHint()]);
   }
 
   function strokeHint(): string {
@@ -349,7 +364,7 @@ export function renderActivity(
         state.current = si + 1;
         updatePrompt();
         updateDots();
-        say(randomCheer() + " " + strokeHint());
+        sayParts([randomCheer(), strokeHint()]);
       } else {
         finishResource();
       }
@@ -423,7 +438,8 @@ export function renderActivity(
       })
     );
 
-    var spoken = randomCheer();
+    // Locución de la recompensa por segmentos (cada uno con audio propio)
+    var spoken: string[] = [randomCheer()];
 
     // Letra → significado (FDD §18) / Número → cantidad (FDD §23–25)
     if (resource.kind === "letter" && resource.meaningEmoji) {
@@ -431,7 +447,7 @@ export function renderActivity(
       layer.appendChild(
         el("div", { class: "phrase", text: resource.char + " de " + resource.meaningWord })
       );
-      spoken += ". " + resource.char + " de " + resource.meaningWord;
+      spoken.push(letterPhrase(resource));
     } else if (resource.kind === "number" && resource.countEmoji && resource.count) {
       var n = resource.count;
       var objs = el("div", { class: "count-objects" });
@@ -445,8 +461,12 @@ export function renderActivity(
       layer.appendChild(objs);
       var words: string[] = [];
       for (i = 0; i < n; i++) words.push(NUMBER_WORDS[i + 1]);
-      spoken +=
-        ". " + PHRASES.countWithMe + " " + words.join(", ") + ". " + n + " " + (resource.meaningWord || "");
+      if (words.length) {
+        // el cero no se cuenta: solo se dice "0 estrellas"
+        spoken.push(PHRASES.countWithMe);
+        spoken.push(words.join(", "));
+      }
+      spoken.push(countPhrase(resource));
       layer.appendChild(el("div", { class: "phrase", text: words.length + " " + (resource.countEmoji || "") }));
     }
 
@@ -481,7 +501,7 @@ export function renderActivity(
     screen.appendChild(layer);
     audio.sfx.unlockPrize();
     later(500, function () {
-      audio.say(spoken);
+      audio.sayAll(spoken);
     });
   }
 

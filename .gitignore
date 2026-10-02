@@ -1,7 +1,10 @@
-# Trazos Mágicos — gitignore
+# Garabati — gitignore
 node_modules/
 dist/
 .freebuff/
 *.local
 .DS_Store
 npm-debug.log*
+
+# material temporal del generador de voz (audiciones, WAV intermedios)
+.voice/

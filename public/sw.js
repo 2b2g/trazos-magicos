@@ -1,6 +1,7 @@
 /* Garabati — service worker (app shell, cache-first).
-   La tipografía entra en el precache: el juego se ve igual sin red. */
-var CACHE = "garabati-v2";
+   La tipografía entra en el precache: el juego se ve igual sin red.
+   Los audios de la voz se guardan al usarlos (no se precargan 3 MB). */
+var CACHE = "garabati-v3";
 var CORE = [
   "./",
   "./index.html",
@@ -40,6 +41,24 @@ self.addEventListener("fetch", function (event) {
   if (req.method !== "GET") return;
   var url = new URL(req.url);
   if (url.origin !== location.origin) return;
+
+  // Voice clips and fonts: cache-first, they never change once generated.
+  if (url.pathname.indexOf("/voice/") === 0 || url.pathname.indexOf("/fonts/") === 0) {
+    event.respondWith(
+      caches.match(req).then(function (hit) {
+        return hit || fetch(req).then(function (res) {
+          if (res && res.status === 200) {
+            var copy = res.clone();
+            caches.open(CACHE).then(function (c) {
+              c.put(req, copy);
+            });
+          }
+          return res;
+        });
+      })
+    );
+    return;
+  }
 
   // Hashed build assets: cache-first, they are immutable.
   if (url.pathname.indexOf("/assets/") === 0) {

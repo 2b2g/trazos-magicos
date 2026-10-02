@@ -91,6 +91,12 @@ export function renderSettings(
     deps.onChange(s);
   }
 
+  // fila informativa: qué voz está sonando (clips grabados o sistema)
+  var voiceInfo = el("div", {
+    class: "switch-row switch-row--info",
+    children: [el("div", { text: "🎙️ Voz del juego: " + audio.voiceDescription })],
+  });
+
   var deleteRow = el("div", {
     class: "switch-row",
     children: [
@@ -148,6 +154,7 @@ export function renderSettings(
   panel.appendChild(slowRow.row);
   panel.appendChild(sfxRow.row);
   panel.appendChild(tolRow.row);
+  panel.appendChild(voiceInfo);
   panel.appendChild(deleteRow);
   panel.appendChild(closeBtn);
 

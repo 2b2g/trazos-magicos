@@ -1,15 +1,25 @@
-/* Servicio de audio (FDD §19): TTS configurable + efectos.
-   El TTS es un proveedor intercambiable: mañana puede ser MP3
-   grabado (keys = claves del catálogo PHRASES) sin tocar el juego. */
+/* Servicio de audio (FDD §19): voz + efectos.
 
-export interface VoiceProvider {
-  speak(text: string): void;
-  cancel(): void;
-}
+   DOS PROVEEDORES DE VOZ, en este orden:
+   1. **Audios pregrabados** (`voiceClips.ts`): voz buena e igual en
+      todas las tabletas, empaquetada con el juego y offline.
+   2. **Voz del sistema** (TTS Web Speech) como respaldo: si falta un
+      clip o el navegador no deja sonar el audio, se locuta aquí.
+
+   El niño nunca se queda sin voz: si no hay audios generados el juego
+   se comporta exactamente como antes.
+
+   Para sustituir el TTS por locución grabada basta con implementar
+   `VoiceProvider` (ver `services/voiceTypes.ts`) y registrarlo aquí. */
+
+import { VoiceProvider } from "./voiceTypes";
+import { ClipVoiceProvider } from "./voiceClips";
+
+export type { VoiceProvider };
 
 /* ---------- proveedor Web Speech API (con guardas Android 5) ---------- */
 
-class TtsProvider implements VoiceProvider {
+class TtsProvider {
   private synth: any = null;
   private voice: any = null;
   private enabled = true;
@@ -176,40 +186,110 @@ class Sfx {
 
 /* ---------- fachada única ---------- */
 
-/**
- * Fachada única del audio del juego (FDD §19).
- *
- * - `say()`  → instrucciones y ánimo por voz (TTS es, configurable).
- * - `sfx.*`  → efectos procedurales WebAudio (sin ficheros: compatible
- *              offline y sin descargas extra).
- *
- * Para sustituir TTS por locución grabada basta con implementar
- * VoiceProvider y asignarlo a `audio.tts` — el resto del juego no cambia.
- */
-export class AudioService {
-  public tts = new TtsProvider();
-  public sfx = new Sfx();
+class TtsVoiceProvider implements VoiceProvider {
+  private tts: TtsProvider;
 
-  /** Voz hablada (instrucciones, ánimo). Silencioso si voz está apagada. */
-  say(text: string): void {
-    this.tts.speak(text);
+  constructor(tts: TtsProvider) {
+    this.tts = tts;
   }
 
-  stopVoice(): void {
+  get available(): boolean {
+    return this.tts.available;
+  }
+
+  speakAll(texts: string[]): void {
+    if (!texts.length) return;
+    // El TTS no tiene pausas: las frases se unen y el punto final de cada
+    // una hace de respiro natural.
+    this.tts.speak(texts.join(" "));
+  }
+
+  cancel(): void {
     this.tts.cancel();
   }
 
-  setVoiceEnabled(on: boolean): void {
+  setEnabled(on: boolean): void {
     this.tts.setEnabled(on);
   }
 
-  /** Voz pausada y aguda para peques (ajuste 🐢, activada por defecto). */
-  setSlowVoice(on: boolean): void {
+  setSlow(on: boolean): void {
     this.tts.setSlow(on);
+  }
+}
+
+/**
+ * Fachada única del audio del juego (FDD §19).
+ *
+ * - `say()` / `sayAll()` → instrucciones y ánimo por voz: clips buenos
+ *   si existen, voz del sistema como respaldo.
+ * - `sfx.*` → efectos procedurales WebAudio (sin ficheros: offline y sin
+ *   descargas extra).
+ */
+export class AudioService {
+  public tts = new TtsProvider();
+  public clips = new ClipVoiceProvider();
+  public sfx = new Sfx();
+  private systemVoice = new TtsVoiceProvider(this.tts);
+  private voiceOn = true;
+
+  constructor() {
+    var self = this;
+    // si un clip no puede sonar, la locución continúa con el TTS
+    this.clips.onFallback = function (texts) {
+      if (self.voiceOn) self.systemVoice.speakAll(texts);
+    };
+  }
+
+  /** ¿Qué voz está sonando? ("ElevenLabs · Sofia (214 audios)" o
+      "voz del sistema"). Útil para ajustes y diagnóstico. */
+  get voiceDescription(): string {
+    return this.clips.description;
+  }
+
+  /** Una frase corta (ánimo, "¡Muy bien!"). */
+  say(text: string): void {
+    this.sayAll([text]);
+  }
+
+  /**
+   * Varias frases seguidas, con pausas naturales entre ellas.
+   * Se usan clips si TODAS existen; si no, la voz del sistema locuta
+   * la locución completa (nunca mezcla clips y TTS en la misma frase).
+   */
+  sayAll(texts: string[]): void {
+    if (!this.voiceOn || !texts.length) return;
+    this.clips.cancel();
+    this.systemVoice.cancel();
+    if (this.clips.playAll(texts)) return;
+    this.systemVoice.speakAll(texts);
+  }
+
+  stopVoice(): void {
+    this.clips.cancel();
+    this.systemVoice.cancel();
+  }
+
+  setVoiceEnabled(on: boolean): void {
+    this.voiceOn = on;
+    this.clips.setEnabled(on);
+    this.systemVoice.setEnabled(on);
+  }
+
+  /** Voz pausada para peques (ajuste 🐢, activada por defecto):
+      los clips se graban reposados y aquí se alargan un poco más. */
+  setSlowVoice(on: boolean): void {
+    this.clips.setSlow(on);
+    this.systemVoice.setSlow(on);
   }
 
   setSfxEnabled(on: boolean): void {
     this.sfx.setEnabled(on);
+  }
+
+  /** Desbloqueo de audio en el primer toque (autoplay de Chrome). */
+  unlock(): void {
+    this.sfx.unlock();
+    this.clips.unlock();
   }
 }
 

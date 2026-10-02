@@ -164,8 +164,8 @@ export function renderMap(
         if (!canPlay) {
           // feedback amable, nunca castigo: Liro anima a seguir
           audio.sfx.retry();
-          bubbleEl.textContent = "Primero termina el de antes 💪";
-          audio.say("Primero termina el de antes. ¡Tú puedes!");
+          bubbleEl.textContent = PHRASES.lockedNode;
+          audio.say(PHRASES.lockedNode);
           return;
         }
         audio.sfx.tap();

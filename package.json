@@ -9,7 +9,10 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "voice:lines": "node scripts/generate-voice.mjs --lines",
+    "voice:generate": "node scripts/generate-voice.mjs",
+    "voice:audition": "node scripts/generate-voice.mjs --audition"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

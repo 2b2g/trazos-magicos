@@ -141,9 +141,10 @@ function boot(): void {
 
   openProfiles();
 
-  // desbloquear audio en el primer toque (política de autoplay)
+  // desbloquear audio en el primer toque (política de autoplay):
+  // efectos + elemento de audio de la voz pregrabada
   var unlock = function (): void {
-    audio.sfx.unlock();
+    audio.unlock();
     window.removeEventListener("touchstart", unlock);
     window.removeEventListener("mousedown", unlock);
   };

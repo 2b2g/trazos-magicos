@@ -49,6 +49,8 @@ function digit(
     speech: speech,
     count: n,
     countEmoji: "⭐",
+    // palabra que cierra el conteo: "3 estrellas" (FDD §23–25)
+    meaningWord: "estrellas",
     altOrders: altOrders,
   };
 }
