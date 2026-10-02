@@ -1,6 +1,13 @@
-/* Trazos Mágicos — service worker (app shell, cache-first) */
-var CACHE = "trazos-magicos-v1";
-var CORE = ["./", "./index.html", "./manifest.webmanifest"];
+/* Garabati — service worker (app shell, cache-first).
+   La tipografía entra en el precache: el juego se ve igual sin red. */
+var CACHE = "garabati-v2";
+var CORE = [
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./fonts/fredoka-one-latin-400.woff2",
+  "./fonts/fredoka-one-latin-400.woff"
+];
 
 self.addEventListener("install", function (event) {
   event.waitUntil(

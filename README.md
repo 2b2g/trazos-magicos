@@ -1,6 +1,10 @@
-# Trazos Mágicos ✏️
+# Garabati ✏️
 
 Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial** para niños de 3 a 6 años. Implementación del FDD v2.0 (MVP Fases A–D).
+
+> **Grande, brillante, redondo, sonoro, con caras, un solo camino, feedback
+> inmediato y celebración constante.** La mascota es **Liro**, un lápiz con
+> cara que crece con las estrellas del niño.
 
 ## Documentación
 
@@ -20,7 +24,7 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 ```bash
 npm install
 npm run dev        # desarrollo → http://localhost:5173
-npm test           # tests unitarios del motor (Vitest)
+npm test           # 37 tests unitarios (motor, storage, mascota, marca)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
 ```
@@ -46,11 +50,16 @@ src/
 │   ├── numbersPhaseD.ts   dígitos 0–9 + palabras post-MVP
 │   ├── families.ts        fases y familias pedagógicas configurables
 │   └── phrases.ts         catálogo de frases TTS en español
+│   └── brand.ts           identidad (nombre, mascota, lema) en un solo sitio
 ├── screens/           perfiles, mapa, actividad (bucle completo), ajustes
+├── ui/                Liro la mascota (CSS con cara) y decoración del cielo
 ├── services/          audio (TTS configurable + SFX WebAudio), storage multi-perfil
-├── util/dom.ts        helpers DOM ES5
+├── util/dom.ts        helpers DOM ES5 · util/fx.ts confeti y estrellas
 └── main.ts            orquestador + service worker
 ```
+
+Fuentes: **Fredoka One** se autohospeda en `public/fonts/` (licencia OFL
+incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
 
 ### El bucle de actividad (FDD §13, §50–51)
 
@@ -69,6 +78,11 @@ src/
 ## UI/UX para 3–6 años (decisiones aplicadas)
 
 - **Sin lectura**: instrucciones habladas (TTS es-ES) + botones-icónicos grandes.
+- **Estética 3–6 años**: paleta saturada de 4–5 colores por pantalla con texto
+  tinta (WCAG AAA ≥ 7:1), botones físicos ≥ 64 px con hundimiento al pulsar,
+  animaciones de 300–500 ms, mascota con cara y emociones, confeti en cada
+  logro y tipografía balloon autohospedada (Fredoka One, OFL). Ver
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §13.
 - **Táctil primero**: rechazo de palma (un solo puntero activo), `touch-action: none`, preventDefault en todo el lienzo.
 - **Sin fracaso**: tolerancia generosa y adaptativa, sin cronómetro, mensajes de ánimo aleatorios.
 - **Puerta parental**: ajustes y borrado de perfil tras mantener pulsado 3 s.
@@ -82,10 +96,10 @@ dist/ compilado se sirve estático y el estado vive en el navegador.
 
 ```bash
 # construir
-docker build -t trazos-magicos:latest .
+docker build -t garabati:latest .
 
 # ejecutar (http://localhost:8080)
-docker run -d --name trazos -p 8080:8080 --restart unless-stopped trazos-magicos:latest
+docker run -d --name garabati -p 8080:8080 --restart unless-stopped garabati:latest
 
 # con plugin compose
 docker compose up -d --build
@@ -107,6 +121,10 @@ docker compose up -d --build
 - [ ] Voz TTS: presente, pausada y aguda (🐢 en ajustes); interruptor funciona
 - [ ] Rechazo de palma: apoyar la mano mientras se traza con un dedo
 - [ ] Puerta parental: toque rápido NO abre ajustes; 3 s sí
+- [ ] Tipografía: se ve Fredoka One (redondeada), no la fuente de respaldo
+- [ ] Botones: se hunden al pulsar; ningún toque cae en un botón contiguo
+- [ ] Silencio: el botón 🔊/🔇 del mapa y de la actividad funciona y se recuerda
+- [ ] Mascota: Liro cambia de etapa al pasar de 5 y de 20 estrellas
 - [ ] localStorage bloqueado (modo incógnito): el juego sigue funcionando sin guardar
 
 ## Post-MVP (ya preparado en el motor)

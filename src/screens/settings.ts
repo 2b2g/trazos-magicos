@@ -1,5 +1,7 @@
 /* Ajustes con puerta parental: mantener pulsado 3 s para entrar.
-   El niño no sale del juego ni borra nada por accidente (FDD UX). */
+   El niño no sale del juego ni borra nada por accidente (FDD UX §9).
+   Zona de adultos: textos completos pero con el mismo lenguaje
+   visual grande y redondeado (guía UX §9: sin menús escondidos). */
 
 import { el, attachHoldSafe } from "../util/dom";
 import { audio } from "../services/audio";
@@ -19,30 +21,41 @@ export function renderSettings(
   var s: Settings = loadSettings();
   var screen = el("div", { class: "screen" });
 
-  var title = el("div", { class: "title", text: "Ajustes 👩‍👦" });
+  var title = el("div", { class: "title", text: "Ajustes 👨" });
   var note = el("div", {
     class: "subtitle",
-    text: "Zona para personas adultas. Mantén pulsado para entrar.",
+    text: "Zona para personas adultas. Mantén pulsado el botón 3 segundos.",
   });
 
   var gateBtn = el("button", {
-    class: "btn-big hold-btn",
-    html: '<span class="emoji">🔑</span>Mantén pulsado<br/>para entrar<span class="fill"></span>',
+    class: "btn btn--purple btn--big hold-btn",
+    attrs: { "aria-label": "Mantén pulsado para entrar en los ajustes" },
+    children: [
+      el("span", { class: "btn__emoji", text: "🔑" }),
+      el("span", { text: "Mantén pulsado" }),
+      el("span", { class: "fill" }),
+    ],
   });
   var fill = gateBtn.querySelector(".fill") as HTMLElement;
 
   var panel = el("div", { class: "col hidden" });
 
-  function row(label: string, initial: boolean, onToggle: (v: boolean) => void): { row: HTMLElement; set: (v: boolean) => void } {
+  function row(
+    label: string,
+    initial: boolean,
+    onToggle: (v: boolean) => void
+  ): { row: HTMLElement; set: (v: boolean) => void } {
     var knob = el("div", { class: "switch" + (initial ? " switch--on" : "") });
     var r = el("div", {
       class: "switch-row",
+      attrs: { role: "switch", "aria-checked": initial ? "true" : "false" },
       children: [el("div", { text: label }), knob],
     });
     var value = initial;
     function set(v: boolean): void {
       value = v;
       knob.className = "switch" + (v ? " switch--on" : "");
+      r.setAttribute("aria-checked", v ? "true" : "false");
     }
     r.addEventListener("click", function () {
       value = !value;
@@ -68,7 +81,7 @@ export function renderSettings(
     audio.setSfxEnabled(v);
     persist();
   });
-  var tolRow = row("🫶 Modo extra fácil", s.toleranceBoost, function (v) {
+  var tolRow = row("❤️ Modo extra fácil", s.toleranceBoost, function (v) {
     s.toleranceBoost = v;
     persist();
   });
@@ -89,7 +102,8 @@ export function renderSettings(
     if (!delArmed) {
       delArmed = true;
       deleteRow.style.background = "#ffe3df";
-      deleteRow.firstChild && ((deleteRow.firstChild as HTMLElement).textContent = "¿Seguro? Pulsa otra vez para borrar");
+      deleteRow.firstChild &&
+        ((deleteRow.firstChild as HTMLElement).textContent = "¿Seguro? Pulsa otra vez para borrar");
       setTimeout(function () {
         delArmed = false;
         deleteRow.style.background = "#ffffff";
@@ -106,23 +120,29 @@ export function renderSettings(
   });
 
   var closeBtn = el("button", {
-    class: "btn-big btn-big--green",
-    html: '<span class="emoji">✅</span>Listo',
+    class: "btn btn--green btn--big",
+    attrs: { "aria-label": "Volver al juego" },
+    children: [el("span", { class: "btn__emoji", text: "✅" }), el("span", { text: "Volver" })],
     onClick: function () {
       audio.sfx.tap();
       deps.onClose();
     },
   });
 
-  // puerta: 3 segundos manteniendo
-  attachHoldSafe(gateBtn, 3000, function (frac: number) {
-    fill.style.width = Math.round(frac * 100) + "%";
-  }, function () {
-    audio.sfx.unlockPrize();
-    gateBtn.classList.add("hidden");
-    note.classList.add("hidden");
-    panel.classList.remove("hidden");
-  });
+  // puerta: 3 segundos manteniendo (el relleno crece en el propio botón)
+  attachHoldSafe(
+    gateBtn,
+    3000,
+    function (frac: number) {
+      fill.style.width = Math.round(frac * 100) + "%";
+    },
+    function () {
+      audio.sfx.unlockPrize();
+      gateBtn.classList.add("hidden");
+      note.classList.add("hidden");
+      panel.classList.remove("hidden");
+    }
+  );
 
   panel.appendChild(voiceRow.row);
   panel.appendChild(slowRow.row);

@@ -1,28 +1,44 @@
-/* Pantalla de perfiles: ¿quién quiere jugar?
-   Solo emojis y nombres; sin lecturas obligadas (FDD UX §3). */
+/* Pantalla de inicio (Garabati): ¿quién quiere jugar?
+   Solo emojis, nombres y voz; nada que haya que leer (guía UX §2).
+   Jerarquía plana: aquí solo se elige jugador o se crea uno. */
 
 import { el } from "../util/dom";
 import { audio } from "../services/audio";
 import { AVATARS, ProfileStore, Profile } from "../services/storage";
 import { PHRASES } from "../content/phrases";
+import { mascotEl } from "../ui/mascot";
+import { skyDeco } from "../ui/decor";
+import { confetti } from "../util/fx";
+import { BRAND } from "../content/brand";
 
 export interface ProfilesDeps {
   store: ProfileStore;
   onEnter: (profile: Profile) => void;
 }
 
+/** Reparte las letras del logo para pintarlas de colores (CSS nth-child). */
+function logoSpan(): HTMLElement {
+  var logo = el("div", { class: "logo" });
+  for (var i = 0; i < BRAND.name.length; i++) {
+    logo.appendChild(el("span", { text: BRAND.name.charAt(i) }));
+  }
+  return logo;
+}
+
 export function renderProfiles(
   host: { root: HTMLElement },
   deps: ProfilesDeps
 ): HTMLElement {
-  var screen = el("div", { class: "screen" });
+  var screen = el("div", { class: "screen screen--sky" });
+  screen.appendChild(skyDeco());
 
-  var title = el("div", { class: "logo", html: 'Trazos <span class="spark">Mágicos</span>' });
-  var mascot = el("div", {
+  var title = logoSpan();
+  var bubbleEl = el("div", { class: "bubble bubble--left", text: PHRASES.chooseProfile });
+  var mascotLine = el("div", {
     class: "mascot-line",
     children: [
-      el("div", { class: "mascot", text: "✏️" }),
-      el("div", { class: "bubble", text: PHRASES.chooseProfile }),
+      mascotEl({ mood: "idle", stars: deps.store.totalStars() }),
+      bubbleEl,
     ],
   });
   var cardsRow = el("div", { class: "row" });
@@ -38,12 +54,17 @@ export function renderProfiles(
     var list = deps.store.listProfiles();
 
     list.forEach(function (p) {
+      var stars = starsOf(p);
       var card = el("div", {
         class: "profile-card",
+        attrs: { "aria-label": p.name },
         children: [
           el("div", { class: "avatar", text: p.avatar }),
           el("div", { class: "name", text: p.name }),
-          el("div", { class: "node__stars", text: starsOf(p) > 0 ? "⭐ " + starsOf(p) : "✨" }),
+          el("div", {
+            class: "stars-mini",
+            text: stars > 0 ? "⭐ " + stars : "✨ ¡Juega!",
+          }),
         ],
         onClick: function () {
           audio.sfx.unlock();
@@ -57,6 +78,7 @@ export function renderProfiles(
 
     var add = el("div", {
       class: "profile-card profile-card--add",
+      attrs: { "aria-label": "Nuevo jugador" },
       children: [
         el("div", { class: "avatar", text: "➕" }),
         el("div", { class: "name", text: "Nuevo" }),
@@ -80,15 +102,15 @@ export function renderProfiles(
     var avatarBtns: HTMLElement[] = [];
     AVATARS.forEach(function (a) {
       var b = el("button", {
-        class: "btn-big btn-big--small",
-        text: a,
-        style: { fontSize: "7vmin" },
+        class: "btn btn--white btn--icon avatar-pick" + (a === chosen ? " avatar-pick--on" : ""),
+        attrs: { "aria-label": "Avatar " + a },
+        children: [el("span", { class: "btn__emoji", text: a })],
         onClick: function () {
           chosen = a;
           audio.sfx.tap();
           for (var i = 0; i < avatarBtns.length; i++) {
-            avatarBtns[i].style.borderColor = avatarBtns[i] === b ? "#58d68d" : "rgba(0,0,0,0.12)";
-            avatarBtns[i].style.borderWidth = avatarBtns[i] === b ? "6px" : "4px";
+            avatarBtns[i].className =
+              "btn btn--white btn--icon avatar-pick" + (avatarBtns[i] === b ? " avatar-pick--on" : "");
           }
         },
       });
@@ -98,15 +120,22 @@ export function renderProfiles(
 
     var input = el("input", {
       class: "input-name",
-      attrs: { type: "text", maxlength: "12", placeholder: "Tu nombre", autocomplete: "off" },
+      attrs: {
+        type: "text",
+        maxlength: "12",
+        placeholder: "Tu nombre",
+        autocomplete: "off",
+        "aria-label": "Tu nombre",
+      },
     });
 
     var rowBtns = el("div", {
       class: "row",
       children: [
         el("button", {
-          class: "btn-big btn-big--ghost",
-          html: '<span class="emoji">↩️</span>Volver',
+          class: "btn btn--coral",
+          attrs: { "aria-label": "Volver" },
+          children: [el("span", { class: "btn__emoji", text: "⬅️" }), el("span", { text: "Volver" })],
           onClick: function () {
             audio.sfx.tap();
             formWrap.classList.add("hidden");
@@ -114,13 +143,16 @@ export function renderProfiles(
           },
         }),
         el("button", {
-          class: "btn-big btn-big--green",
-          html: '<span class="emoji">✅</span>¡Listo!',
+          class: "btn btn--green btn--big",
+          attrs: { "aria-label": "Listo" },
+          children: [el("span", { class: "btn__emoji", text: "😊" }), el("span", { text: "¡Listo!" })],
           onClick: function () {
-            var name = (input as HTMLInputElement).value || "Amigo";
+            var name = ((input as HTMLInputElement).value || "Amigo").slice(0, 12);
             var p = deps.store.createProfile(name, chosen);
             deps.store.setCurrentProfile(p.id);
-            audio.sfx.tap();
+            // mini celebración de bienvenida antes de entrar
+            confetti(screen, 16);
+            audio.sfx.unlockPrize();
             deps.onEnter(p);
           },
         }),
@@ -132,13 +164,21 @@ export function renderProfiles(
     formWrap.appendChild(rowBtns);
     formWrap.classList.remove("hidden");
     cardsRow.classList.add("hidden");
+    setTimeout(function () {
+      try {
+        (input as HTMLInputElement).focus();
+      } catch (e) {
+        /* sin foco: el niño puede tocar el campo */
+      }
+    }, 300);
   }
 
   formWrap.classList.add("hidden");
   buildCards();
 
   screen.appendChild(title);
-  screen.appendChild(mascot);
+  screen.appendChild(el("div", { class: "subtitle", text: "Dibujar es jugar" }));
+  screen.appendChild(mascotLine);
   screen.appendChild(cardsRow);
   screen.appendChild(formWrap);
   host.root.appendChild(screen);

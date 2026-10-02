@@ -1,16 +1,16 @@
-# Trazos Mágicos — despliegue de un contenedor
+# Garabati — despliegue de un contenedor
 #
 #   con plugin compose:   docker compose up -d --build
-#   sin plugin:           docker build -t trazos-magicos:latest . && docker run -d --name trazos -p 8080:8080 trazos-magicos:latest
+#   sin plugin:           docker build -t garabati:latest . && docker run -d --name garabati -p 8080:8080 garabati:latest
 #
 # HTTPS: pon detrás un reverse proxy (Caddy/Traefik/NPM). El service
 # worker del juego solo se registra bajo https:// (o localhost).
 
 services:
-  trazos:
+  garabati:
     build: .
-    image: trazos-magicos:latest
-    container_name: trazos-magicos
+    image: garabati:latest
+    container_name: garabati
     ports:
       - "8080:8080"
     restart: unless-stopped

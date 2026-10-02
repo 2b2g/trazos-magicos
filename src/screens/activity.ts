@@ -2,6 +2,10 @@
    presentación → demostración → trazado trazo a trazo → evaluación
    adaptativa (la tolerancia se relaja si el niño lo necesita) →
    recompensa con significado (letra) o cantidad (número).
+
+   Estética (guía UX §6): Liro reacciona a cada intento —salta al
+   acertar, se apena con dulzura al fallar— el progreso del recurso
+   se ve como puntos, y el final es una celebración con confeti.
    Nunca hay castigo ni bloqueo: siempre se avanza. */
 
 import { el, buzz } from "../util/dom";
@@ -25,11 +29,18 @@ import {
   STRICT_EVAL,
 } from "../engine/evaluator";
 import { PHRASES, randomCheer, NUMBER_WORDS } from "../content/phrases";
+import { mascotEl, setMascotMood, MascotMood } from "../ui/mascot";
+import { skyDeco } from "../ui/decor";
+import { confetti, starRow } from "../util/fx";
 
 export interface ActivityDeps {
   store: ProfileStore;
   settings: Settings;
   onExit: () => void;
+  /** ¿Está el sonido (voz + efectos) activado? */
+  sound: boolean;
+  /** Silencia o activa todo; devuelve el estado nuevo. */
+  onToggleSound: () => boolean;
 }
 
 export function renderActivity(
@@ -37,13 +48,15 @@ export function renderActivity(
   resource: ResourceDef,
   deps: ActivityDeps
 ): HTMLElement {
-  var screen = el("div", { class: "screen screen--sky" });
+  var screen = el("div", { class: "screen screen--sky screen--hud" });
+  screen.appendChild(skyDeco());
 
   /* ---------- construcción DOM ---------- */
 
   var homeBtn = el("button", {
-    class: "btn-big btn-big--ghost btn-big--small",
-    html: '<span class="emoji">🏠</span>',
+    class: "btn btn--coral btn--icon",
+    attrs: { "aria-label": "Volver al mapa" },
+    children: [el("span", { class: "btn__emoji", text: "🏠" })],
     onClick: function () {
       audio.sfx.tap();
       cleanup();
@@ -51,22 +64,51 @@ export function renderActivity(
     },
   });
 
-  var promptEl = el("div", { class: "prompt", text: resource.label });
+  var promptEl = el("div", { class: "hud__center", text: resource.label });
 
-  var topbar = el("div", { class: "topbar", children: [homeBtn, promptEl] });
+  var soundPill = el("button", {
+    class: "pill pill--button pill--icon",
+    attrs: { "aria-label": "Activar o silenciar el sonido" },
+    children: [el("span", { class: "pill__icon", text: deps.sound ? "🔊" : "🔇" })],
+    onClick: function () {
+      var on = deps.onToggleSound();
+      setSound(on);
+      if (on) audio.sfx.tap();
+    },
+  });
+
+  /** Mantiene el icono de sonido sincronizado con el estado global. */
+  function setSound(on: boolean): void {
+    (soundPill.firstChild as HTMLElement).textContent = on ? "🔊" : "🔇";
+  }
+
+  var hud = el("div", {
+    class: "hud",
+    children: [
+      el("div", { class: "hud__side hud__side--left", children: [homeBtn] }),
+      promptEl,
+      el("div", { class: "hud__side", children: [soundPill] }),
+    ],
+  });
 
   var holder = el("div", { class: "canvas-holder" });
   var canvas = document.createElement("canvas");
   holder.appendChild(canvas);
 
-  var bubbleEl = el("div", { class: "bubble", text: "" });
+  // progreso por trazos: puntos, no números (3–6 años)
+  var dotsRow = el("div", { class: "dots" });
+  var dotEls: HTMLElement[] = [];
+
+  var bubbleEl = el("div", { class: "bubble bubble--left", text: "" });
+  var liro = mascotEl({ mood: "idle", stars: deps.store.totalStars() });
   var mascotLine = el("div", {
     class: "mascot-line",
-    children: [el("div", { class: "mascot", text: "✏️" }), bubbleEl],
+    children: [liro, bubbleEl],
   });
 
-  screen.appendChild(topbar);
+  screen.appendChild(hud);
   screen.appendChild(holder);
+  screen.appendChild(dotsRow);
   screen.appendChild(mascotLine);
   host.root.appendChild(screen);
 
@@ -122,6 +164,43 @@ export function renderActivity(
     timers.push(setTimeout(fn, ms) as any);
   }
 
+  /* ---------- progreso visible (puntos) ---------- */
+
+  function buildDots(): void {
+    dotEls = [];
+    while (dotsRow.firstChild) dotsRow.removeChild(dotsRow.firstChild);
+    if (strokes.length < 2) return;
+    for (var i = 0; i < strokes.length; i++) {
+      var d = el("div", { class: "dots__dot" });
+      dotEls.push(d);
+      dotsRow.appendChild(d);
+    }
+    updateDots();
+  }
+
+  function updateDots(): void {
+    for (var i = 0; i < dotEls.length; i++) {
+      var cls = "dots__dot";
+      if (state.done[i]) cls += " dots__dot--done";
+      else if (i === state.current) cls += " dots__dot--now";
+      dotEls[i].className = cls;
+    }
+  }
+
+  /* ---------- Liro reacciona (feedback multimodal inmediato) ---------- */
+
+  function react(mood: MascotMood): void {
+    // reinicia la animación aunque repita emoción
+    liro.className = liro.className.replace(/mascot--(idle|happy|oh|party)/, "mascot--idle");
+    void liro.offsetWidth; // reflow: fuerza a reiniciar el keyframe
+    setMascotMood(liro, mood);
+    if (mood !== "idle" && mood !== "party") {
+      later(1500, function () {
+        if (alive) setMascotMood(liro, "idle");
+      });
+    }
+  }
+
   /* ---------- bucle de render ---------- */
 
   function loop(t: number): void {
@@ -175,19 +254,23 @@ export function renderActivity(
     state.templateAlpha = 0.4;
     failCount = 0;
     updatePrompt();
+    updateDots();
     attachInput();
     say(PHRASES.nowYou + " " + strokeHint());
   }
 
   function strokeHint(): string {
     var s = strokes[state.current];
-    return s.label ? s.label + "." : "";
+    if (!s.label) return "";
+    // la voz lee la pista como frase propia: "Hacia abajo."
+    var label = s.label.charAt(0).toUpperCase() + s.label.slice(1);
+    return label + ".";
   }
 
   function updatePrompt(): void {
     if (strokes.length > 1) {
       promptEl.textContent =
-        resource.label + " · trazo " + (state.current + 1) + " de " + strokes.length;
+        resource.label + " · " + (state.current + 1) + "/" + strokes.length;
     } else {
       promptEl.textContent = resource.label;
     }
@@ -260,9 +343,12 @@ export function renderActivity(
       failCount = 0;
       audio.sfx.strokeDone();
       buzz(35);
+      react("happy");
+      updateDots();
       if (si + 1 < strokes.length) {
         state.current = si + 1;
         updatePrompt();
+        updateDots();
         say(randomCheer() + " " + strokeHint());
       } else {
         finishResource();
@@ -270,6 +356,7 @@ export function renderActivity(
     } else {
       failCount++;
       audio.sfx.retry();
+      react("oh");
       say(failCount >= 2 ? PHRASES.tryAgain : PHRASES.almost);
       if (failCount === 2) {
         // recordatorio visual: demo de un solo trazo
@@ -293,7 +380,7 @@ export function renderActivity(
     }
   }
 
-  /* ---------- recompensa ---------- */
+  /* ---------- recompensa (celebración exagerada) ---------- */
 
   function finishResource(): void {
     phase = "reward";
@@ -311,14 +398,23 @@ export function renderActivity(
     deps.store.recordAttempt(resource.id, res.score, stars, true);
 
     audio.sfx.success();
+    react("party");
 
     var layer = el("div", { class: "reward-layer" });
+
+    // estrellas que aparecen una a una + confeti proporcional al logro
+    starRow(layer, stars);
+    confetti(screen, stars === 3 ? 26 : 16);
+
+    // Liro baila la victoria dentro de la celebración (es el refuerzo
+    // emocional del logro: la cara que celebra con el niño)
     layer.appendChild(
       el("div", {
-        class: "stars-big",
-        text: stars === 3 ? "⭐⭐⭐" : stars === 2 ? "⭐⭐" : "⭐",
+        class: "mascot-line mascot-line--compact",
+        children: [mascotEl({ mood: "party", stars: deps.store.totalStars() })],
       })
     );
+
     layer.appendChild(el("div", { class: "phrase", text: randomCheer() }));
     layer.appendChild(
       el("div", {
@@ -331,8 +427,7 @@ export function renderActivity(
 
     // Letra → significado (FDD §18) / Número → cantidad (FDD §23–25)
     if (resource.kind === "letter" && resource.meaningEmoji) {
-      var prize = el("div", { class: "prize", text: resource.meaningEmoji });
-      layer.appendChild(prize);
+      layer.appendChild(el("div", { class: "prize", text: resource.meaningEmoji }));
       layer.appendChild(
         el("div", { class: "phrase", text: resource.char + " de " + resource.meaningWord })
       );
@@ -350,7 +445,8 @@ export function renderActivity(
       layer.appendChild(objs);
       var words: string[] = [];
       for (i = 0; i < n; i++) words.push(NUMBER_WORDS[i + 1]);
-      spoken += ". " + PHRASES.countWithMe + " " + words.join(", ") + ". " + n + " " + (resource.meaningWord || "");
+      spoken +=
+        ". " + PHRASES.countWithMe + " " + words.join(", ") + ". " + n + " " + (resource.meaningWord || "");
       layer.appendChild(el("div", { class: "phrase", text: words.length + " " + (resource.countEmoji || "") }));
     }
 
@@ -359,8 +455,9 @@ export function renderActivity(
         class: "row",
         children: [
           el("button", {
-            class: "btn-big btn-big--orange",
-            html: '<span class="emoji">🔁</span>Otra vez',
+            class: "btn btn--orange",
+            attrs: { "aria-label": "Repetir la actividad" },
+            children: [el("span", { class: "btn__emoji", text: "🔁" }), el("span", { text: "Otra vez" })],
             onClick: function () {
               audio.sfx.tap();
               cleanup();
@@ -368,8 +465,9 @@ export function renderActivity(
             },
           }),
           el("button", {
-            class: "btn-big btn-big--green",
-            html: '<span class="emoji">➡️</span>Seguir',
+            class: "btn btn--green",
+            attrs: { "aria-label": "Seguir jugando" },
+            children: [el("span", { class: "btn__emoji", text: "➡️" }), el("span", { text: "Seguir" })],
             onClick: function () {
               audio.sfx.tap();
               cleanup();
@@ -410,7 +508,9 @@ export function renderActivity(
   }
 
   (screen as any).destroy = cleanup;
+  (screen as any).setSound = setSound;
 
+  buildDots();
   start();
   return screen;
 }

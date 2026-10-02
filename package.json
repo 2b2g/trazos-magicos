@@ -1,8 +1,8 @@
 {
-  "name": "trazos-magicos",
+  "name": "garabati",
   "private": true,
-  "version": "0.1.0",
-  "description": "Trazos Mágicos — videojuego web de grafomotricidad, preescritura y escritura inicial para niños de 3 a 6 años",
+  "version": "0.5.0",
+  "description": "Garabati — videojuego web de grafomotricidad, preescritura y escritura inicial para niños de 3 a 6 años",
   "type": "module",
   "scripts": {
     "dev": "vite",

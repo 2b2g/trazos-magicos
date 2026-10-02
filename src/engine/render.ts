@@ -39,15 +39,21 @@ export interface Theme {
   demo: string;
 }
 
+/**
+ * Paleta del lienzo (rediseño 0.5.0): saturada y de alto contraste
+ * sobre el papel blanco, con la semántica del producto — uva para el
+ * trazo activo, hierba para lo conseguido, sol para el punto de
+ * inicio — y la tinta del niño en azul brillante bien visible.
+ */
 export const DEFAULT_THEME: Theme = {
   bg: "#ffffff",
-  guide: "#d9dde8",
-  corridor: "rgba(124, 77, 255, 0.16)",
-  active: "#7c4dff",
-  done: "#58d68d",
-  ink: "#3e64ff",
-  startDot: "#ff9f43",
-  demo: "#ffb300",
+  guide: "#dfe3ef",
+  corridor: "rgba(95, 40, 207, 0.15)",
+  active: "#5f28cf",
+  done: "#2fb45c",
+  ink: "#1f8fff",
+  startDot: "#ff9a3d",
+  demo: "#ffb400",
 };
 
 function roundRect(

@@ -1,6 +1,7 @@
-/* TRAZOS MÁGICOS — punto de entrada.
-   Flujo: perfiles → mapa de fases → actividad → vuelta al mapa.
-   Los ajustes se aplican al servicio de audio en caliente. */
+/* GARABATI — punto de entrada.
+   Flujo plano (guía UX §5): perfiles → mapa de fases → actividad →
+   recompensa → mapa. Dos niveles de profundidad como máximo.
+   Los ajustes de sonido se aplican al servicio de audio en caliente. */
 
 import "./styles.css";
 import { el } from "./util/dom";
@@ -13,6 +14,7 @@ import {
   Profile,
 } from "./services/storage";
 import { ALL_RESOURCES } from "./content";
+import { BRAND } from "./content/brand";
 import { renderProfiles } from "./screens/profiles";
 import { renderMap } from "./screens/map";
 import { renderActivity } from "./screens/activity";
@@ -30,6 +32,32 @@ function boot(): void {
 
   var mapScreen: HTMLElement | null = null;
   var settingsScreen: HTMLElement | null = null;
+  var activityScreen: HTMLElement | null = null;
+
+  /** ¿Suena algo ahora mismo? (voz o efectos) */
+  function soundOn(): boolean {
+    return settings.voice || settings.sfx;
+  }
+
+  /**
+   * Conmutador de sonido de un toque (los padres lo agradecen,
+   * guía UX §7): silencia voz + efectos o los reactiva, lo guarda y
+   * sincroniza los iconos de todas las pantallas vivas.
+   */
+  function toggleSound(): boolean {
+    var on = !(settings.voice && settings.sfx);
+    settings.voice = on;
+    settings.sfx = on;
+    audio.setVoiceEnabled(on);
+    audio.setSfxEnabled(on);
+    saveSettings(settings);
+    var screens = [mapScreen, activityScreen];
+    for (var i = 0; i < screens.length; i++) {
+      var s = screens[i] as any;
+      if (s && s.setSound) s.setSound(on);
+    }
+    return on;
+  }
 
   function showOnly(screen: HTMLElement | null): void {
     var children = Array.prototype.slice.call(app.children) as HTMLElement[];
@@ -42,6 +70,7 @@ function boot(): void {
   function openProfiles(): void {
     settingsScreen = null;
     mapScreen = null;
+    activityScreen = null;
     while (app.firstChild) app.removeChild(app.firstChild);
     renderProfiles(host, {
       store: profiles,
@@ -62,6 +91,8 @@ function boot(): void {
         },
         onSettings: openSettings,
         onExit: openProfiles,
+        sound: soundOn(),
+        onToggleSound: toggleSound,
       },
       ALL_RESOURCES
     );
@@ -69,6 +100,7 @@ function boot(): void {
   }
 
   function refreshMap(): void {
+    activityScreen = null;
     if (mapScreen && (mapScreen as any).refresh) (mapScreen as any).refresh();
     showOnly(mapScreen);
   }
@@ -79,10 +111,12 @@ function boot(): void {
       if (ALL_RESOURCES[i].id === resourceId) r = ALL_RESOURCES[i];
     }
     if (!r) return;
-    renderActivity(host, r, {
+    activityScreen = renderActivity(host, r, {
       store: profiles,
       settings: settings,
       onExit: refreshMap,
+      sound: soundOn(),
+      onToggleSound: toggleSound,
     });
     if (mapScreen) mapScreen.classList.add("hidden");
   }
@@ -136,6 +170,9 @@ function boot(): void {
       if (warn.parentElement) warn.parentElement.removeChild(warn);
     }, 5000);
   }
+
+  // ajuste del título del documento (identidad en un solo sitio)
+  document.title = BRAND.name;
 }
 
 if (document.readyState === "loading") {

@@ -1,5 +1,5 @@
 # ============================================================
-# Trazos Mágicos — imagen de producción
+# Garabati — imagen de producción
 # Multi-stage: 1) build con Node (tsc + vite + legacy ES5)
 #              2) nginx alpine sirviendo dist/ (~30 MB final)
 # Sin backend: todo el estado vive en el navegador del niño.
