@@ -10,7 +10,7 @@
 | **E2E sintético** | navegador + eventos Pointer sintéticos (`preview_evaluate`) | flujo completo real: perfiles → mapa → demo → trazado → recompensa → progreso |
 | **Checklist de dispositivo** | manual (README) | Android 5 WebView real, iPad, gama baja, offline, rechazo de palma |
 
-## 2. Suite unitaria (37 tests, todos en verde)
+## 2. Suite unitaria (48 tests, todos en verde)
 
 - `tests/engine.test.ts` — muestreo (extremos exactos, continuidad de la O,
   espaciado uniforme), evaluador (trazo perfecto, temblor infantil, trazo
@@ -29,6 +29,12 @@
 - `tests/brand.test.ts` — **coherencia del renombrado a Garabati**: manifest
   PWA, `<title>`, `package.json`, imagen Docker, caché del service worker y
   ausencia del nombre anterior en las pantallas.
+- `tests/voice.test.ts` — **integridad de la voz pregrabada**: ids
+  deterministas y seguros como nombre de fichero, catálogo de frases sin
+  duplicados, manifiesto que solo anuncia MP3 existentes, **cero frases sin
+  audio**, cero audios huérfanos, aceptación/rechazo del proveedor de clips y
+  **ninguna frase literal fuera del catálogo** en las pantallas (esas caerían
+  al TTS robótico sin que nadie lo notase).
 
 ## 3. Batería E2E en navegador (sesión de prueba intensiva)
 

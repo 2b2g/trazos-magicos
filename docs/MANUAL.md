@@ -15,6 +15,9 @@ Cada niño tiene su perfil con su progreso; se crean los que hagan falta.
 
 - **El mapa**: cuatro mundos en orden pedagógico:
   1. ✏️ **Primeros trazos** — líneas, curvas, ondas, zigzag, círculo.
+
+La voz es **grabada** (no la del dispositivo): suena igual de bien en una
+tableta barata que en un iPad, y también sin conexión.
   2. 🔷 **Formas y patrones** — cruz, colina, triángulo, cuadrado, casita, estrella.
   3. 🔤 **El Abecedario Mágico** — 27 mayúsculas (con Ñ) por familias motoras.
   4. 🔢 **Los Números Mágicos** — del 0 al 9 contando estrellas.
@@ -44,9 +47,12 @@ Cada niño tiene su perfil con su progreso; se crean los que hagan falta.
 Mantén pulsada la **🔑** 3 segundos para entrar. Ahí puedes:
 
 - **🔊 Voz**: instrucciones habladas on/off.
-- **🐢 Voz pausada**: ritmo lento y timbre agudo, pensado para que los
-  peques sigan la frase (activada por defecto). Desactívala si prefieres
-  una voz más natural para niños mayores.
+- **🐢 Voz pausada**: alarga la locución un 12 % para que los peques sigan
+  la frase (activada por defecto). Desactívala para la marcha normal.
+- **🎙️ Voz del juego** (fila informativa): indica qué voz está sonando y
+  cuántas frases grabadas hay, p. ej. *"macos · Flo (Español (España))
+  (303 audios)"*. Si dice **"voz del sistema"** es que faltan audios y el
+  juego está usando la voz del dispositivo.
 - **🎵 Efectos**: sonidos de acierto on/off.
 - **❤️ Modo extra fácil**: corredor de tolerancia más ancho y umbrales más
   amables — recomendado para los más pequeños o con motricidad dificultada.

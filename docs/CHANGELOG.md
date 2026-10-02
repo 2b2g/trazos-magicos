@@ -3,6 +3,60 @@
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
 
+## [0.6.0] — 2026-10-02 · Voz pregrabada (adiós a la voz robótica)
+
+### Cambiado
+- **La voz ya no depende del TTS del dispositivo.** El guion completo
+  (**303 frases**, ≈ 4.700 caracteres) se pre-renderiza a MP3 y viaja con el
+  juego: suena igual, cálida y nítida en cualquier tableta, y funciona sin
+  conexión. La Web Speech API queda como **respaldo** para lo que falte.
+- **La app locuta por segmentos** en vez de concatenar cadenas nuevas
+  (`sayAll([ánimo, pista])`, `sayAll([ánimo, "Cuenta conmigo.", "uno, dos",
+  "3 estrellas"])`): así cada frase del catálogo puede tener su audio y las
+  pausas suenan naturales.
+- **Ajuste 🐢 "voz pausada"**: ahora alarga los clips un 12 %
+  (`playbackRate` 0.88) en vez de subir el tono del TTS. Los MP3 se graban a
+  155 ppm, ya más lentos que un locutor adulto.
+- **Frase de nodo bloqueado** movida a `PHRASES.lockedNode`: estaba escrita a
+  mano en la pantalla y habría caído al TTS sin audio propio.
+- Los números ahora cierran el conteo con su unidad: **"3 estrellas" /
+  "1 estrella"** (`content/speech.ts`), antes se locutaba un número suelto.
+- **Service worker**: caché `garabati-v3` con regla cache-first para
+  `/voice/` y `/fonts/` (los audios se guardan al usarlos, no en la
+  instalación).
+
+### Añadido
+- **`services/voiceClips.ts`**: reproductor de clips con cola, cancelación
+  (barge-in), desbloqueo de autoplay con `voice/silencio.mp3` y respaldo
+  automático al TTS si un clip no puede sonar.
+- **`services/voiceId.ts`**: id determinista por frase (slug legible + hash
+  FNV-1a) compartido por la app y el generador.
+- **`services/voiceLines.ts`** + **`content/speech.ts`**: catálogo completo de
+  frases hablables derivado del contenido, para que nada quede sin audio.
+- **`content/voiceManifest.ts`** (generado): manifiesto compilado de audios
+  disponibles; sin él el juego arranca igual usando TTS.
+- **`scripts/generate-voice.mjs`**: generador con adaptadores para **macOS
+  `say`**, **ElevenLabs**, **OpenAI** y **Piper**, más audiciones de voz
+  (`--audition`), `--dry-run`, `--limit`, `--force` y `--prune`. Compila el
+  catálogo TS con esbuild para leerlo desde Node.
+- **`docs/VOICE.md`**: qué servicio elegir, coste real del guion (céntimos en
+  la nube, 0 € en local), licencias (ojo: las voces de Apple no valen para
+  publicar) y el flujo de trabajo al cambiar frases.
+- **Ajustes**: fila informativa con la voz activa (*"macos · Flo (Español
+  (España)) (303 audios)"*).
+- **11 tests nuevos** (`tests/voice.test.ts`): ids estables y seguros como
+  nombre de fichero, catálogo sin duplicados, manifiesto ↔ MP3 en disco, cero
+  frases sin audio, cero audios huérfanos y **ninguna frase literal fuera del
+  catálogo** en las pantallas → **48 tests** en total.
+- `public/voice/` con los 303 MP3 (≈3,3 MB, mono 22 kHz / 48 kbps).
+
+### Notas
+- Los audios del repositorio se generaron con las voces del sistema de macOS
+  (desarrollo). Antes de publicar el producto hay que regenerarlos con un
+  servicio con licencia comercial: `docs/VOICE.md` §3.
+- El generador nunca se ejecuta en el build ni en el despliegue: la app
+  publicada no contacta con ningún servicio.
+
 ## [0.5.0] — 2026-10-02 · Garabati: rediseño de UI para 3–6 años
 
 ### Cambiado

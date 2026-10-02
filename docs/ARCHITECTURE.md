@@ -22,7 +22,8 @@ estático: `dist/` (HTML + bundle moderno + bundle ES5 legacy + CSS + SW).
 │  │  touch (entrada) → evaluator (veredicto) → demo (animación)│   │
 │  └───────────────────────────┬────────────────────────────────┘   │
 │  ui: mascot (Liro) · decor (cielo) ── util/dom · util/fx (confeti) │
-│  services: audio (TTS+SFX) · storage (localStorage) · content/brand │
+│  services: audio (voz grabada + TTS + SFX) · storage · content/brand│
+│  voz: voiceClips (MP3) → voiceId · voiceLines ↔ scripts/generate-voice│
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -106,16 +107,43 @@ y superposición de demo. **DPR limitado a 1.5** (gama baja Android 5).
 
 ## 7. Audio (services/audio.ts)
 
-- **Voz**: `TtsProvider` (Web Speech API) con selección de voz
-  preferente: `es-ES`/`es-419` y nombres "infantiles" (niñ/kid/junior…)
-  puntúan más alto. Ritmo pausado (rate 0.72, pitch 1.3) activado por
-  defecto con ajuste 🐢; alternativo rate 0.9/pitch 1.15.
-  Falta de TTS no bloquea nada (texto + iconos ya guían).
+Dos proveedores de voz en cadena y efectos procedurales. El niño nunca se
+queda sin voz: si falta un audio, se locuta con la voz del sistema.
+
+```
+sayAll(["¡Muy bien!", "Hacia abajo."])
+        │
+        ├─ 1. ClipVoiceProvider   ¿existen TODOS los MP3?  →  cola de <audio>
+        │      services/voiceClips.ts   (voice/<id>.mp3, offline, voz igual en
+        │                                todas las tabletas)
+        └─ 2. TtsVoiceProvider    respaldo: Web Speech API del dispositivo
+               (es-ES/es-419, rate 0.72/0.9, pitch 1.3/1.15 con ajuste 🐢)
+```
+
+- **Nunca se mezcla** clip y TTS en la misma locución: si falta una sola
+  frase, todo ese turno va al TTS (las pausas quedan naturales).
+- **`sayAll(segmentos)`** en vez de concatenar cadenas: la app habla frases
+  del catálogo, así que todo es pre-generable. `screens/activity.ts` locuta
+  `[ánimo, pista del trazo]` o `[ánimo, "Cuenta conmigo.", "uno, dos",
+  "3 estrellas"]` con respiros reales entre segmentos.
+- **Ids deterministas** (`services/voiceId.ts`): `slug + hash FNV-1a` del
+  texto → mismo id en Node (generador) y en el navegador, sin tabla de
+  correspondencia que se pueda desincronizar.
+- **Manifiesto compilado** (`content/voiceManifest.ts`, generado): lista de
+  ids disponibles. Al ir dentro del bundle no hay petición extra y el juego
+  sabe al instante si puede usar el clip (sin esperas ni 404).
+- **Audios** en `public/voice/` (~3 MB, 303 frases): el service worker los
+  cachea al usarlos (`/voice/` cache-first); no se precargan.
+- **Desbloqueo** (política de autoplay): en el primer toque suena
+  `voice/silencio.mp3` (100 ms, volumen mínimo) para habilitar el elemento;
+  si el navegador bloquea un clip, `onFallback` continúa con TTS.
+- **Ajuste 🐢 "voz pausada"** (por defecto): `playbackRate` 0.88 en los clips
+  (los MP3 ya se graban a 155 ppm, más lento que un locutor adulto).
 - **Efectos**: osciladores WebAudio procedurales (`strokeDone`, `success`,
   `retry`, `tap`, `unlockPrize`) — sin ficheros: offline total y 0 KB extra.
-- **Sustituir TTS por MP3**: implementar `VoiceProvider` y asignar
-  `audio.tts = miProveedor` — las claves del catálogo están en
-  `content/phrases.ts`.
+- **Cambiar de voz**: `docs/VOICE.md` (servicios, costes, licencias y el
+  comando de un solo paso). El contrato está en `services/voiceTypes.ts`:
+  para añadir un proveedor propio basta implementar `VoiceProvider`.
 
 ## 8. Persistencia (services/storage.ts)
 
@@ -167,6 +195,8 @@ validan continuidad geométrica (ningún salto > 40 px) de todo el catálogo.
 | Sin woff2 en Safari 9 | `@font-face` con woff2 **y** woff + pila de respaldo del sistema |
 | Emoji posteriores a 2014 no existen | solo emoji pre-2014 de un solo code point (nada de ZWJ) |
 | Font variable (Fredoka del repo) no soportada | se autohospeda **Fredoka One** estática (OFL) en `public/fonts/` |
+| `play()` sin promesa en Chromium 37 | se comprueba si hay `.then` antes de encadenar |
+| MP3 mono 22 kHz | compatible con cualquier decodificador de Android 5 (~6 KB/s) |
 
 ## 11. Despliegue (Docker)
 
@@ -253,6 +283,28 @@ invierte (verde = avanzar, coral = atrás).
 - Sin publicidad, sin compras, sin dark patterns; el único control de
   adultos está tras la puerta de 3 s.
 
+## 14. Voz pregrabada (0.6.0)
+
+La voz del sistema sonaba robótica y **cambiaba según la tableta** (en
+Android 5 de gama baja es la peor parte del juego). La solución es
+generar los audios **una vez** y empaquetarlos: calidad constante,
+idéntica y offline, sin depender de ningún servicio en tiempo de
+ejecución. Detalle completo en `docs/VOICE.md`.
+
+| Pieza | Dónde |
+|---|---|
+| Id determinista de cada frase | `services/voiceId.ts` |
+| Catálogo de frases hablables | `services/voiceLines.ts` (+ `content/speech.ts`) |
+| Reproductor con cola y respaldo | `services/voiceClips.ts` |
+| Generador (macos/ElevenLabs/OpenAI/Piper) | `scripts/generate-voice.mjs` |
+| Manifiesto (generado) | `content/voiceManifest.ts` |
+| Audios | `public/voice/<id>.mp3` |
+
+Garantías comprobadas por tests: el manifiesto solo anuncia audios que
+existen, no quedan frases sin audio, no hay audios huérfanos y ninguna
+pantalla locuta frases literales fuera del catálogo (caerían al TTS sin
+que nadie lo notase).
+
 ## 12. Mantenimiento de la documentación
 
 - Cambio de comportamiento → actualizar la sección correspondiente aquí +
@@ -265,3 +317,6 @@ invierte (verde = avanzar, coral = atrás).
 - Renombrar el producto → `src/content/brand.ts` + manifest + `index.html` +
   `package.json` + `sw.js` + Docker; `tests/brand.test.ts` verifica que no
   quede ninguna mención al nombre anterior en la app.
+- Tocar una frase hablada → `npm run voice:generate` y commit de los MP3
+  nuevos en el mismo paso (§14); `tests/voice.test.ts` falla si el
+  manifiesto, los ficheros y el catálogo se desincronizan.

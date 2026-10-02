@@ -11,6 +11,7 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 | Documento | Contenido |
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitectura completa: motor, evaluación, entrada, audio, storage, contenido, compatibilidad |
+| [docs/VOICE.md](docs/VOICE.md) | Voz pregrabada: servicios, costes, licencias y generación de los audios |
 | [docs/TESTING.md](docs/TESTING.md) | Estrategia de pruebas, batería E2E ejecutada y hallazgos corregidos |
 | [docs/MANUAL.md](docs/MANUAL.md) | Manual para adultos: perfiles, ajustes, pedagogía y problemas frecuentes |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | Registro de cambios (mantener junto a cada cambio de código) |
@@ -28,6 +29,19 @@ npm test           # 37 tests unitarios (motor, storage, mascota, marca)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
 ```
+
+### Voz
+
+```bash
+npm run voice:lines                                     # el guion completo del juego
+npm run voice:audition                                  # muestras para elegir voz (macOS)
+npm run voice:generate -- --voice "Flo (Español (España))" --prune
+ELEVENLABS_API_KEY=xxx npm run voice:generate -- --provider elevenlabs --voice "<ID>"
+```
+
+Al añadir o cambiar frases, regenera los audios y commitea `public/voice/`:
+`tests/voice.test.ts` falla si algo queda desincronizado. Detalles y
+comparativa de servicios en [docs/VOICE.md](docs/VOICE.md).
 
 > ⚠️ Compatibilidad objetivo: **Android 5+ (Chromium 37)**. El build genera un bundle ES5 con polyfills (44 kB + 28 kB gzip). Sin CSS Grid, sin `var()`, sin flex `gap`, con Touch Events como entrada principal y Pointer Events como mejora progresiva.
 
@@ -77,7 +91,11 @@ incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
 
 ## UI/UX para 3–6 años (decisiones aplicadas)
 
-- **Sin lectura**: instrucciones habladas (TTS es-ES) + botones-icónicos grandes.
+- **Voz grabada, no robótica**: las **303 frases** del juego están
+  pre-renderizadas en MP3 (`public/voice/`, ~3 MB) y suenan igual en todas las
+  tabletas, también sin conexión; la voz del sistema queda como respaldo. Ver
+  [docs/VOICE.md](docs/VOICE.md).
+- **Sin lectura**: instrucciones habladas (español) + botones-icónicos grandes.
 - **Estética 3–6 años**: paleta saturada de 4–5 colores por pantalla con texto
   tinta (WCAG AAA ≥ 7:1), botones físicos ≥ 64 px con hundimiento al pulsar,
   animaciones de 300–500 ms, mascota con cara y emociones, confeti en cada
@@ -118,7 +136,8 @@ docker compose up -d --build
 - [ ] Tablet Android gama baja: FPS de trazado aceptable (DPR 1.5 máx.)
 - [ ] Offline: abrir 2 veces, activar modo avión, recargar (service worker)
 - [ ] "Añadir a pantalla de inicio" (PWA fullscreen landscape)
-- [ ] Voz TTS: presente, pausada y aguda (🐢 en ajustes); interruptor funciona
+- [ ] Voz grabada: suena igual en Android 5 y en iPad (ajustes muestra
+      "voz del juego: … (303 audios)"); 🐢 alarga el ritmo; apagar la voz la calla
 - [ ] Rechazo de palma: apoyar la mano mientras se traza con un dedo
 - [ ] Puerta parental: toque rápido NO abre ajustes; 3 s sí
 - [ ] Tipografía: se ve Fredoka One (redondeada), no la fuente de respaldo
