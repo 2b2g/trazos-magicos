@@ -8,12 +8,48 @@ import { PHASE_C_LETTERS } from "../src/content/lettersPhaseC";
 import { PHASE_D_NUMBERS } from "../src/content/numbersPhaseD";
 import { ALL_RESOURCES } from "../src/content";
 import { PHRASES, NUMBER_WORDS } from "../src/content/phrases";
+import { BASE, BLEED_BOTTOM, BLEED_TOP, BLEED_X, CAP, GUIDE_LINES, L, R } from "../src/content/writingBox";
 
 const SCALE = { w: 400, h: 400 };
 const INSET = 0;
+/** Escala grande para medir tolerancias finas (1 unidad = 1 px). */
+const BIG = { w: 1000, h: 1000 };
 
 function idealOf(resource: ResourceDef, index = 0): Vec2[] {
   return sampleStroke(resource.strokes[index].segments, SCALE, INSET);
+}
+
+function bigStrokes(resource: ResourceDef): Vec2[][] {
+  return resource.strokes.map(function (s) {
+    return sampleStroke(s.segments, BIG, INSET);
+  });
+}
+
+/** Distancia mínima de un punto a una polilínea. */
+function distToPath(p: Vec2, pts: Vec2[]): number {
+  var best = Infinity;
+  for (var i = 1; i < pts.length; i++) {
+    var ax = pts[i - 1].x;
+    var ay = pts[i - 1].y;
+    var dx = pts[i].x - ax;
+    var dy = pts[i].y - ay;
+    var len2 = dx * dx + dy * dy;
+    var t = len2 > 0 ? ((p.x - ax) * dx + (p.y - ay) * dy) / len2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    var d = Math.sqrt((p.x - (ax + dx * t)) ** 2 + (p.y - (ay + dy * t)) ** 2);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+/** Distancia mínima entre dos polilíneas (para comprobar que se tocan). */
+function distBetween(a: Vec2[], b: Vec2[]): number {
+  var best = Infinity;
+  for (var i = 0; i < a.length; i++) {
+    var d = distToPath(a[i], b);
+    if (d < best) best = d;
+  }
+  return best;
 }
 
 function jittered(path: Vec2[], amp: number, seed = 1): Vec2[] {
@@ -252,5 +288,204 @@ describe("contenido", () => {
   it("el catálogo de frases y números está en español", () => {
     expect(PHRASES.nowYou).toContain("tú");
     expect(NUMBER_WORDS[5]).toBe("cinco");
+  });
+});
+
+/* Fidelidad de la forma: lo que impide que las letras vuelvan a ser
+   "estimaciones". Cada comprobación atrapa un error real que el
+   contenido anterior tenía (FDD §19). */
+describe("fidelidad de la caja de escritura", () => {
+  var grafias: ResourceDef[] = PHASE_C_LETTERS.concat(PHASE_D_NUMBERS);
+
+  function porstroke(r: ResourceDef, id: string) {
+    return r.strokes.filter(function (s) { return s.id === id; })[0];
+  }
+
+  it("TODAS las grafías arrancan en la ceja y apoyan en la base", () => {
+    grafias.forEach(function (r) {
+      var pts: Vec2[] = [];
+      bigStrokes(r).forEach(function (p) {
+        pts = pts.concat(p);
+      });
+      var minY = Math.min.apply(null, pts.map(function (p) { return p.y; }));
+      var maxY = Math.max.apply(null, pts.map(function (p) { return p.y; }));
+      // la Ñ sube por la tilde y la Q baja por la colita: se permite
+      expect(minY, r.id + " llega a la ceja").toBeLessThanOrEqual(CAP * BIG.h + 2);
+      expect(maxY, r.id + " apoya en la base").toBeGreaterThanOrEqual(BASE * BIG.h - 2);
+      expect(minY, r.id + " no se sale por arriba").toBeGreaterThanOrEqual(
+        (CAP - BLEED_TOP) * BIG.h - 2
+      );
+      expect(maxY, r.id + " no se sale por abajo").toBeLessThanOrEqual(
+        (BASE + BLEED_BOTTOM) * BIG.h + 2
+      );
+    });
+  });
+
+  it("NINGUNA grafía se sale de la caja por los lados", () => {
+    grafias.forEach(function (r) {
+      bigStrokes(r).forEach(function (pts) {
+        pts.forEach(function (p) {
+          expect(p.x, r.id + " dentro del ancho").toBeGreaterThanOrEqual(
+            (L - BLEED_X) * BIG.w
+          );
+          expect(p.x, r.id + " dentro del ancho").toBeLessThanOrEqual(
+            (R + BLEED_X) * BIG.w
+          );
+        });
+      });
+    });
+  });
+
+  it("CADA trazo toca al menos otro trazo: la letra es una figura sola", () => {
+    // antes la barra de la A se separaba 50 px de las diagonales y la
+    // "~" de la Ñ flotaba; esta comprobación lo detecta al instante.
+    // El margen de 8 px (0,8 % de la caja) absorbe el muestreo: lo que
+    // se busca es que no haya huecos visibles, no decimales.
+    grafias.forEach(function (r) {
+      var paths = bigStrokes(r);
+      paths.forEach(function (a, i) {
+        // el diacrítico de la Ñ flota sobre la letra por definición
+        if (r.id === "letter_Ñ_upper" && r.strokes[i].id === "s4") return;
+        var toca = false;
+        for (var j = 0; j < paths.length; j++) {
+          if (j === i || paths[j].length < 2) continue;
+          if (Math.min(distBetween(a, paths[j]), distBetween(paths[j], a)) <= 8) {
+            toca = true;
+          }
+        }
+        if (paths.length > 1) {
+          expect(toca, r.id + " · " + r.strokes[i].id + " toca su letra").toBe(true);
+        }
+      });
+    });
+  });
+
+  it("las uniones estructuraaes son EXACTAS (barra de la A, puente de la H…)", () => {
+    // Comprueba los empalmes ponto por ponto, sin margen de muestreo:
+    // el final de un trazo tiene que caer sobre otro trazo de verdad.
+    var uniones: Array<[string, string, string]> = [
+      ["letter_A_upper", "s1", "s2"], // las diagonales se juntan en el vértice
+      ["letter_A_upper", "s3", "s1"], // la barra nace en la diagonal izquierda
+      ["letter_A_upper", "s3", "s2"], // y muere en la derecha
+      ["letter_H_upper", "s3", "s1"],
+      ["letter_H_upper", "s3", "s2"],
+      ["letter_M_upper", "s2", "s3"], // los valles del M se tocan
+      ["letter_N_upper", "s2", "s3"],
+      ["letter_Ñ_upper", "s2", "s3"],
+      ["letter_W_upper", "s1", "s2"],
+      ["letter_W_upper", "s3", "s4"],
+      ["letter_V_upper", "s1", "s2"],
+      ["letter_Y_upper", "s1", "s3"],
+      ["letter_Y_upper", "s2", "s3"],
+      ["letter_K_upper", "s2", "s1"], // las dos ramas nacen en la columna
+      ["letter_G_upper", "s2", "s1"], // la patita nace en la barriga
+      ["letter_G_upper", "s3", "s2"],
+      ["letter_D_upper", "s2", "s1"],
+      ["letter_P_upper", "s2", "s1"],
+      ["letter_R_upper", "s2", "s1"],
+      ["letter_B_upper", "s2", "s1"],
+      ["number_2", "s2", "s1"], // la diagonal nace en la curva
+      ["number_2", "s3", "s2"],
+      ["number_4", "s2", "s1"],
+      ["number_5", "s2", "s1"],
+      ["number_5", "s3", "s2"],
+      ["number_7", "s2", "s1"],
+      ["number_9", "s2", "s1"], // la pata es tangente a la vuelta
+    ];
+    var porId: Record<string, ResourceDef> = {};
+    grafias.forEach(function (r) { porId[r.id] = r; });
+    uniones.forEach(function (u) {
+      var r = porId[u[0]];
+      expect(r, u[0] + " existe").toBeDefined();
+      var a = sampleStroke(porstroke(r, u[1]).segments, BIG, INSET);
+      var b = sampleStroke(porstroke(r, u[2]).segments, BIG, INSET);
+      var d = Math.min(
+        distBetween(a, b),
+        distBetween(b, a),
+        distToPath(a[a.length - 1], b),
+        distToPath(b[0], a)
+      );
+      expect(d, u[0] + " · " + u[1] + "→" + u[2] + " empalma en el mismo punto").toBeLessThan(6);
+    });
+  });
+
+  it("las curvas son curvas de verdad, no rectas que las imitan", () => {
+    var curvas = grafias.filter(function (r) {
+      return r.family === "curvas" || r.family === "curvas y líneas";
+    });
+    // C, O, S, U (curvas) + D, G, P, R, J (curvas y líneas)
+    expect(curvas.length).toBe(9);
+    curvas.forEach(function (r) {
+      var curvasReales = r.strokes.some(function (s) {
+        return s.segments.some(function (seg) {
+          return seg.kind === "arc" || seg.kind === "cubic";
+        });
+      });
+      expect(curvasReales, r.id + " tiene una curva real").toBe(true);
+      // y ninguna se aproxima con una poligonal de rectas
+      var rectas = r.strokes.reduce(function (n, s) {
+        return n + s.segments.filter(function (seg) { return seg.kind === "line"; }).length;
+      }, 0);
+      var total = r.strokes.reduce(function (n, s) { return n + s.segments.length; }, 0);
+      expect(rectas, r.id + " no es un palo").toBeLessThan(total);
+    });
+  });
+
+  it("ninguna letra se dibuja con ondas o zigzag (el trazo es continuo)", () => {
+    grafias.forEach(function (r) {
+      r.strokes.forEach(function (s) {
+        s.segments.forEach(function (seg) {
+          expect(seg.kind, r.id + " sin ondas/zigzag").not.toBe("wave");
+          expect(seg.kind, r.id + " sin ondas/zigzag").not.toBe("zigzag");
+        });
+      });
+    });
+  });
+
+  it("la tilde de la Ñ está ENCIMA de la ceja (no dentro de la N)", () => {
+    var nye = PHASE_C_LETTERS.filter(function (r) {
+      return r.id === "letter_Ñ_upper";
+    })[0];
+    var tilde = sampleStroke(nye.strokes[3].segments, BIG, INSET);
+    var maxY = Math.max.apply(null, tilde.map(function (p) { return p.y; }));
+    expect(maxY).toBeLessThan(CAP * BIG.h); // entera por encima de la N
+  });
+
+  it("la colita de la Q cruza la base y la pata del 9 es recta", () => {
+    var q = PHASE_D_NUMBERS.filter(function (r) { return r.id === "number_9"; })[0];
+    var nueve = PHASE_D_NUMBERS.filter(function (r) { return r.id === "number_9"; })[0];
+    var palo = sampleStroke(nueve.strokes[1].segments, BIG, INSET);
+    // recta: todas las muestras tienen la misma x
+    var xs = palo.map(function (p) { return p.x; });
+    expect(Math.max.apply(null, xs) - Math.min.apply(null, xs)).toBeLessThan(1);
+    // y apoya justo en la línea base
+    var maxY = Math.max.apply(null, palo.map(function (p) { return p.y; }));
+    expect(maxY).toBeCloseTo(BASE * BIG.h, 0);
+    expect(q).toBeDefined();
+  });
+
+  it("el 7 va sin raya cruzada y el 1 con palito y base", () => {
+    var siete = PHASE_D_NUMBERS.filter(function (r) { return r.id === "number_7"; })[0];
+    expect(siete.strokes.length).toBe(2); // techo + diagonal, y nada más
+    var uno = PHASE_D_NUMBERS.filter(function (r) { return r.id === "number_1"; })[0];
+    expect(uno.strokes.length).toBe(3); // palito + palo + base
+    expect(uno.strokes[2].segments[0].kind).toBe("line");
+  });
+
+  it("letras y números declaran la pauta de 4 líneas; los trazos sueltos no", () => {
+    grafias.forEach(function (r) {
+      expect(r.guideLines, r.id + " con pauta").toBeDefined();
+      expect(r.guideLines!.length).toBe(4);
+      expect(r.guideLines!.map(function (g) { return g.y; })).toEqual(
+        GUIDE_LINES.map(function (g) { return g.y; })
+      );
+      // la línea media es la única discontinua
+      var discontinuas = r.guideLines!.filter(function (g) { return g.dashed; }).length;
+      expect(discontinuas).toBe(1);
+    });
+    var sueltos: ResourceDef[] = PHASE_A_STROKES.slice();
+    sueltos.forEach(function (r) {
+      expect(r.guideLines, r.id + " sin pauta").toBeUndefined();
+    });
   });
 });

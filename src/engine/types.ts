@@ -74,6 +74,21 @@ export interface ResourceDef {
   findDistractors?: string[];
   /** Dificultad 1..3 → tolerancia y velocidad de demo. */
   difficulty?: 1 | 2 | 3;
+  /**
+   * Pauta de escritura a dibujar detrás del grafema (letras y números):
+   * líneas horizontales en `y` normalizado, como las 4 líneas del
+   * cuaderno (ceja, altura de barras, media discontinua y base).
+   * El motor no sabe qué es una letra: solo pinta las `y` que le
+   * dan. Sin este campo (fases A y B) no se dibuja nada.
+   */
+  guideLines?: GuideLine[];
+}
+
+/** Línea de la pauta de escritura (ver `content/writingBox.ts`). */
+export interface GuideLine {
+  y: number;
+  /** `true` = línea discontinua (la línea media de la pauta). */
+  dashed?: boolean;
 }
 
 /** Trazo dibujado por el niño (muestras en coordenadas de lienzo). */

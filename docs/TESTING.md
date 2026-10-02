@@ -10,7 +10,7 @@
 | **E2E sintético** | navegador + eventos Pointer sintéticos (`preview_evaluate`) | flujo completo real: perfiles → mapa → demo → trazado → recompensa → progreso |
 | **Checklist de dispositivo** | manual (README) | Android 5 WebView real, iPad, gama baja, offline, rechazo de palma |
 
-## 2. Suite unitaria (59 tests, todos en verde)
+## 2. Suite unitaria (71 tests, todos en verde)
 
 - `tests/engine.test.ts` — muestreo (extremos exactos, continuidad de la O,
   espaciado uniforme), evaluador (trazo perfecto, temblor infantil, trazo
@@ -19,7 +19,15 @@
   curva ∪ vs ∩, fronteras de estrellas), contenido (27 letras con Ñ, 10 dígitos
   con `count` correcto, ids únicos, habla en cada recurso, **continuidad
   geométrica: ningún salto > 40 px en todo el catálogo**, significado
-  emoji+palabra, frases en español).
+  emoji+palabra, frases en español) y **fidelidad de la forma** (bloque
+  `fidelidad de la caja de escritura`, 10 tests queblindan el0.8.0):
+  toda grafía llega a la ceja y apoya en la base, ninguna se sale de la caja,
+  **cada trazo toca al menos otro trazo** (la letra es una figura sola), las
+  **uniones son exactas** (barra de la A, puente de la H, valles del M, cola
+  del 2, tangencia del 9…), las curvas son arcos o cúbicas de verdad, ninguna
+  letra se dibuja con ondas o zigzag, la tilde de la Ñ está encima de la ceja, el
+  7 va sin raya y el 1 con palito y base, y letras y números declaran las
+  4 líneas de la pauta mientras que los trazos sueltos no.
 - `tests/storage.test.ts` — ciclo de perfiles, **monotonía del progreso**
   (un intento peor nunca resta), `completed` pegajoso, suma de estrellas,
   **JSON corrupto no rompe**, ajustes con defaults y merge, **localStorage
@@ -65,6 +73,9 @@ dedo con PointerEvents sintéticos y leyendo localStorage como oráculo.
 | 14 | Progreso persistente y desbloqueo encadenado | ✅ (fix #2: regla única) |
 | 15 | Botón casa a mitad de actividad: vuelve al mapa sin errores | ✅ |
 | 16 | Consola limpia con el bundle final (fix #4 del `setPointerCapture`) | ✅ |
+| 17 | **Letra A con la geometría nueva**: 3 trazos, barra cruzada en las diagonales, 3 ⭐, precisión 98 %, "A de Avión" | ✅ (0.8.0) |
+| 18 | **Pauta de 4 líneas dibujada** detrás del grafema, medidas en el lienzo: 0,16 / 0,50 / 0,67 / 0,84 | ✅ (0.8.0) |
+| 19 | **Recorrido de voz completo** (perfiles → mapa → letra → número → recompensa con conteo), 17 clips: ninguno cortado, ninguno al TTS salvo el saludo previo al primer toque | ✅ (0.7.1) |
 
 ## 4. Hallazgos y correcciones de la batería
 
@@ -73,6 +84,7 @@ dedo con PointerEvents sintéticos y leyendo localStorage como oráculo.
 3. **Feedback de nodo bloqueado** solo sonoro → ahora actualiza el bocadillo de la mascota.
 4. **`setPointerCapture` NotFoundError** con punteros que sueltan antes del capture (WebViews antiguos) → try/catch defensivo.
 5. **Geometría** — zigzag con discontinuidad en `phase=0.5` (salto 86 px) y estrella de 4 puntas con un segmento mal apuntado (salto 124 px). El nuevo test de continuidad los habría cazado desde el principio; ahora forma parte de la suite.
+6. **Fidelidad de las letras (0.8.0)** — al rehacer el contenido con la caja de escritura compartida, la propia suite nueva encontró tres fallos reales: la barra de la A se salía 50 px de las diagonales, la "~" de la Ñ flotaba dentro de la caja de la N y el bucle del 6 empezaba 114 px lejos de donde llegaba el palito. Con `guideLines` y la métrica única, los tests de caja, uniones y curvas exactas los impiden volver.
 
 ## 5. Cómo reproducir la batería sintética
 

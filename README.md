@@ -25,7 +25,7 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 ```bash
 npm install
 npm run dev        # desarrollo → http://localhost:5173
-npm test           # 61 tests unitarios (motor, storage, mascota, marca, voz)
+npm test           # 71 tests unitarios (motor, storage, mascota, marca, voz, fidelidad)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
 ```
@@ -85,7 +85,7 @@ incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
 
 ### Añadir contenido nuevo
 
-1. Una letra nueva = una entrada en `lettersPhaseC.ts` con sus trazos como segmentos (`ln`, `ar`, `qd`, `wv` en coordenadas 0–1).
+1. Una letra nueva = una entrada en `lettersPhaseC.ts` con sus trazos como segmentos (`ln`, `arcDeg`, `cb` en coordenadas 0–1), apoyada en las métricas de `writingBox.ts`.
 2. Órdenes de trazado alternativos: campo `altOrders` (FDD §7).
 3. Las familias y fases se reordenan en `families.ts` sin tocar código.
 
@@ -97,6 +97,12 @@ incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
   tabletas, también sin conexión; la voz del sistema queda como respaldo. Ver
   [docs/VOICE.md](docs/VOICE.md).
 - **Sin lectura**: instrucciones habladas (español) + botones-icónicos grandes.
+- **Letras y números fieles al trazo**: las 27 mayúsculas y los 10 dígitos se
+  construyen sobre una **caja de escritura común** (misma ceja, misma base) y
+  llevan **pauta de 4 líneas** detrás, como el cuaderno de escritura infantil.
+  Los 10 tests de *fidelidad de la caja de escritura* comprueban que nada se sale
+  de la caja y que cada trazo toca al resto de la letra. Ver
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §9.1.
 - **Estética 3–6 años**: paleta saturada de 4–5 colores por pantalla con texto
   tinta (WCAG AAA ≥ 7:1), botones físicos ≥ 64 px con hundimiento al pulsar,
   animaciones de 300–500 ms, mascota con cara y emociones, confeti en cada

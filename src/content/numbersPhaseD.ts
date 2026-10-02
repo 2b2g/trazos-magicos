@@ -1,35 +1,19 @@
-import { ResourceDef, Segment } from "../engine/types";
+import { ResourceDef } from "../engine/types";
+import { BASE, CAP, CX, DL, DR, GUIDE_LINES, arcDeg, cb, ln, ring } from "./writingBox";
 
 /* FASE D — Los Números Mágicos 0–9 (FDD §4, §21–25).
-   Cada dígito: trazos ordenados + relación símbolo → cantidad. */
+   Cada dígito: trazos ordenados + relación símbolo → cantidad.
 
-const ln = (ax: number, ay: number, bx: number, by: number): Segment => ({
-  kind: "line",
-  a: { x: ax, y: ay },
-  b: { x: bx, y: by },
-});
-const ar = (
-  cx: number,
-  cy: number,
-  rx: number,
-  ry: number,
-  start: number,
-  sweep: number,
-  ccw?: boolean
-): Segment => ({ kind: "arc", cx: cx, cy: cy, rx: rx, ry: ry, start: start, sweep: sweep, ccw: ccw });
-const qd = (ax: number, ay: number, cx: number, cy: number, bx: number, by: number): Segment => ({
-  kind: "quad",
-  a: { x: ax, y: ay },
-  cp: { x: cx, y: cy },
-  b: { x: bx, y: by },
-});
-
-const CIRC = ar(0.5, 0.5, 0.34, 0.36, -Math.PI / 2, Math.PI * 2);
+   Estilo de escritura: el habitual en España y Latinoamérica
+   ("estupecho"): el 1 lleva palito y base, el 4 es cerrado, el 7 se
+   escribe SIN raya cruzada y el 9 cae con la pata recta. Los
+   trazos usan la misma caja de escritura que las letras
+   (`writingBox.ts`), así que un 6 mide lo mismo que una O. */
 
 function digit(
   char: string,
   difficulty: 1 | 2 | 3,
-  strokeList: Array<[string, string, Segment[]]>,
+  strokeList: Array<[string, string, ResourceDef["strokes"][number]["segments"]]>,
   speech: string[],
   altOrders?: string[][]
 ): ResourceDef {
@@ -52,82 +36,113 @@ function digit(
     // palabra que cierra el conteo: "3 estrellas" (FDD §23–25)
     meaningWord: "estrellas",
     altOrders: altOrders,
+    guideLines: GUIDE_LINES,
   };
 }
 
+/* ---------------- 0 a 4 ---------------- */
+
+/* 0: elipse alta y estrecha (0.48 × 0.68), no un círculo. */
+const ZERO = digit("0", 1,
+  [["s1", "una vuelta", [ring(CX, 0.5, 0.24, (BASE - CAP) / 2)]]],
+  ["El cero.", "Una vuelta redonda."]);
+
+/* 1: palito + palo + base (así se escribe de verdad, no un palo solo). */
+const ONE = digit("1", 1,
+  [
+    ["s1", "el palito", [ln(0.34, 0.28, CX, CAP)]],
+    ["s2", "el palo", [ln(CX, CAP, CX, BASE)]],
+    ["s3", "la base", [ln(0.32, BASE, 0.68, BASE)]],
+  ],
+  ["El uno.", "Un palito, un palo y una base."]);
+
+/* 2: curva de media vuelta, diagonal y base, con los empalmes justos. */
+const TWO_ARC_Y = 0.34;
+
+const TWO = digit("2", 2,
+  [
+    ["s1", "la curva", [arcDeg(CX, TWO_ARC_Y, 0.24, 0.18, 180, 180, false)]],
+    ["s2", "la diagonal", [ln(0.74, TWO_ARC_Y, DL, BASE)]],
+    ["s3", "la base", [ln(DL, BASE, DR, BASE)]],
+  ],
+  ["El dos.", "Curva arriba, diagonal abajo y una base."]);
+
+/* 3: dos barrigas que se tocan en el punto medio exacto. */
+const THREE = digit("3", 2,
+  [[
+    "s1",
+    "dos barrigas",
+    [
+      arcDeg(CX, 0.33, 0.22, 0.17, -160, 250, false),
+      arcDeg(CX, 0.67, 0.22, 0.17, -90, 250, false),
+    ],
+  ]],
+  ["El tres.", "Dos barrigas a la derecha."]);
+
+/* 4 cerrado: diagonal, horizontal y palo. */
+const FOUR = digit("4", 2,
+  [
+    ["s1", "la diagonal", [ln(0.62, CAP, DL, 0.6)]],
+    ["s2", "la horizontal", [ln(DL, 0.6, DR, 0.6)]],
+    ["s3", "el palo", [ln(0.62, CAP, 0.62, BASE)]],
+  ],
+  ["El cuatro.", "Diagonal, cruz y palo."],
+  [["s1", "s2", "s3"], ["s3", "s1", "s2"]]);
+
+/* ---------------- 5 a 9 ---------------- */
+
+/* 5: techo, palo y barriga con el rabito hacia la izquierda. */
+const FIVE_BOWL_Y = 0.66;
+
+const FIVE = digit("5", 2,
+  [
+    ["s1", "el techo", [ln(0.72, CAP, 0.34, CAP)]],
+    ["s2", "el palo", [ln(0.34, CAP, 0.34, 0.48)]],
+    ["s3", "la barriga", [arcDeg(0.34, FIVE_BOWL_Y, 0.36, 0.18, -90, 200, false)]],
+  ],
+  ["El cinco.", "Techo, palo y una barriga."]);
+
+/* 6: el trazo baja curvado hasta el bucle y da la vuelta completa,
+   cuyo punto más bajo apoya justo en la línea base. El bucle nace
+   en el mismo punto donde llega el palito (180°), sin salto. */
+const SIX = digit("6", 2,
+  [[
+    "s1",
+    "baja y enrolla",
+    [
+      cb(0.72, CAP, 0.52, 0.26, 0.3, 0.4, DL, 0.66),
+      ring(CX, 0.66, CX - DL, BASE - 0.66, 180),
+    ],
+  ]],
+  ["El seis.", "Bajas y haces una vuelta."]);
+
+/* 7 SIN raya cruzada (así se escribe en España y Latinoamérica). */
+const SEVEN = digit("7", 1,
+  [
+    ["s1", "el techo", [ln(DL, CAP, DR, CAP)]],
+    ["s2", "la diagonal", [ln(DR, CAP, 0.4, BASE)]],
+  ],
+  ["El siete.", "Techo y diagonal."]);
+
+/* 8: dos vueltas cerradas; la de abajo es más ancha. */
+const EIGHT = digit("8", 3,
+  [
+    ["s1", "vuelta de arriba", [ring(CX, 0.33, 0.2, 0.17)]],
+    ["s2", "vuelta de abajo", [ring(CX, 0.67, 0.24, 0.17)]],
+  ],
+  ["El ocho.", "Dos vueltas, arriba y abajo."]);
+
+/* 9: la vuelta arriba y la pata RECTA hasta la base, tocando la curva
+   justo en el punto donde se tangen (x = 0.7, y = 0.44). */
+const NINE = digit("9", 2,
+  [
+    ["s1", "la vuelta", [ring(CX, 0.34, 0.24, 0.18)]],
+    ["s2", "el palo", [ln(0.7, 0.44, 0.7, BASE)]],
+  ],
+  ["El nueve.", "Una vuelta y un palo."]);
+
 export const PHASE_D_NUMBERS: ResourceDef[] = [
-  digit("0", 1,
-    [["s1", "una vuelta", [CIRC]]],
-    ["El cero.", "Una vuelta redonda."]),
-
-  digit("1", 1,
-    [["s1", "un palito", [ln(0.5, 0.14, 0.5, 0.86)]]],
-    ["El uno.", "Un palito hacia abajo."]),
-
-  digit("2", 2,
-    [
-      ["s1", "la curva", [qd(0.2, 0.3, 0.5, -0.02, 0.8, 0.3)]],
-      ["s2", "la diagonal", [ln(0.8, 0.3, 0.2, 0.86)]],
-      ["s3", "la base", [ln(0.2, 0.86, 0.8, 0.86)]],
-    ],
-    ["El dos.", "Curva arriba, diagonal abajo y una base."]),
-
-  digit("3", 2,
-    [[
-      "s1",
-      "dos barrigas",
-      [
-        ar(0.5, 0.33, 0.28, 0.2, Math.PI * 1.11, Math.PI * 1.45),
-        ar(0.52, 0.68, 0.3, 0.21, Math.PI * 1.43, Math.PI * 1.13),
-      ],
-    ]],
-    ["El tres.", "Dos barrigas a la derecha."]),
-
-  digit("4", 2,
-    [
-      ["s1", "diagonal", [ln(0.62, 0.14, 0.2, 0.6)]],
-      ["s2", "línea horizontal", [ln(0.2, 0.6, 0.84, 0.6)]],
-      ["s3", "palo vertical", [ln(0.62, 0.14, 0.62, 0.86)]],
-    ],
-    ["El cuatro.", "Diagonal, cruz y palo."],
-    [["s1", "s2", "s3"], ["s3", "s1", "s2"]]),
-
-  digit("5", 2,
-    [
-      ["s1", "techo", [ln(0.75, 0.14, 0.25, 0.14)]],
-      ["s2", "palo", [ln(0.25, 0.14, 0.25, 0.5)]],
-      ["s3", "barriga", [ar(0.46, 0.68, 0.32, 0.22, 4.0, Math.PI * 1.28)]],
-    ],
-    ["El cinco.", "Techo, palo y una barriga."]),
-
-  digit("6", 2,
-    [[
-      "s1",
-      "baja y enrolla",
-      [ln(0.72, 0.14, 0.28, 0.6), ar(0.5, 0.66, 0.24, 0.24, Math.PI * 1.07, Math.PI * 2, true)],
-    ]],
-    ["El seis.", "Bajas y haces una vuelta."]),
-
-  digit("7", 1,
-    [
-      ["s1", "techo", [ln(0.18, 0.14, 0.82, 0.14)]],
-      ["s2", "diagonal", [ln(0.82, 0.14, 0.42, 0.86)]],
-    ],
-    ["El siete.", "Techo y diagonal."]),
-
-  digit("8", 3,
-    [
-      ["s1", "círculo de arriba", [ar(0.5, 0.31, 0.24, 0.18, -Math.PI / 2, Math.PI * 2, true)]],
-      ["s2", "círculo de abajo", [ar(0.5, 0.69, 0.3, 0.19, -Math.PI / 2, Math.PI * 2, true)]],
-    ],
-    ["El ocho.", "Dos vueltas, arriba y abajo."]),
-
-  digit("9", 2,
-    [
-      ["s1", "la vuelta", [ar(0.5, 0.32, 0.26, 0.22, -Math.PI / 2, Math.PI * 2, true)]],
-      ["s2", "el palo", [ln(0.76, 0.34, 0.66, 0.86)]],
-    ],
-    ["El nueve.", "Una vuelta y un palo."]),
+  ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE,
 ];
 
 /** Palabras cortas — estructura lista, desbloqueo post-MVP (FDD §27–28). */

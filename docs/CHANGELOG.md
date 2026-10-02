@@ -3,6 +3,66 @@
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
 
+## [0.8.0] — 2026-10-02 · Letras y números fieles al trazo, con pauta de escritura
+
+### Corregido
+- **Las letras ya no son “estimaciones”.** Todas las mayúsculas se rehacen sobre
+  una **caja de escritura compartida** (`content/writingBox.ts`: ceja 0,16 ·
+  altura de barras 0,50 · línea media 0,67 · base 0,84 · columnas 0,24/0,76), y
+  las piezas que se tocan **se calculan** en vez de escribirse “cerca”. Casos
+  reales que estaban mal y ahora no:
+  - **La A**: la barra iba de 0,28 a 0,72 y **sobresalía de la letra por los dos
+    lados**; ahora nace y muere exactamente en las diagonales (`diagX`).
+  - **La Ñ**: la “~” estaba en 0,26, **dentro** de la caja de la N; ahora es una
+    cúbica **por encima** de la ceja.
+  - **El 6**: el bucle empezaba **114 px lejos** de donde llegaba el palito (un
+    salto visible); ahora nace en el mismo punto.
+  - **La S** no llegaba a la línea base y **el 2** no llegaba a la ceja: ambos
+    arcos corregidos.
+  - **La I** estaba pegada al margen izquierdo (parecía una raya suelta): ahora
+    es un palo centrado; **la N** llevaba la diagonal al revés y la voz la
+    describía mal (“Abajo, arriba y abajo”); **la J** era una curva hecha de
+    rectas; **la G** tenía la patita despegada de la barriga.
+- **Los números se escriben como se enseñan** (estilo de España y Latinoamérica):
+  el **1** lleva palito y base, el **4** es cerrado, el **7 va sin raya** cruzada y
+  el **9 cae con la pata recta**; el 0 es ovalado y el 3 tiene las dos barrigas
+  reales. Antes el 1 era un palo suelto.
+- **Las curvas son curvas de verdad**: cada letra de las familias “curvas” y
+  “curvas y líneas” (C, O, S, U, D, G, P, R, J) tiene al menos un arco o una
+  cúbica; ya no hay letras “aproximadas” con poligonales de rectas.
+
+### Añadido
+- **Pauta de escritura de 4 líneas en el lienzo** (ceja, altura de barras, media
+  discontinua y base), como el cuaderno de escritura infantil. El contenido la
+  declara (`ResourceDef.guideLines`) y el motor solo la pinta: las fases A y B
+  (trazos sueltos) no la muestran.
+- **`src/content/writingBox.ts`**: la métrica compartida y los helpers de
+  geometría (`diagX`, `cBody`, `bowl`, `ring`, `arcDeg` en grados) que hacen que
+  las uniones sean exactas por construcción.
+- **10 tests de fidelidad** (`tests/engine.test.ts` → *fidelidad de la caja de
+  escritura*): toda grafía llega a la ceja y apoya en la base, ninguna se sale de
+  la caja, **cada trazo toca al menos otro trazo** (la letra es una figura sola),
+  las **uniones son exactas** (barra de la A, puente de la H, valles del M, cola
+  del 2, tangencia del 9…), las curvas son reales, la tilde de la Ñ está encima,
+  el 7 va sin raya y el 1 con base, y la pauta está declarada donde toca →
+  **71 tests** en total.
+- Voz regenerada: las 6 frases nuevas (“Dos patas y una diagonal.”, “Un palito, un
+  palo y una base.” y las cuatro pistas nuevas del 1 y el 8) tienen audio y los
+  10 MP3 huérfanos de las etiquetas antiguas quedaron podados (**299 frases**).
+
+### Cambiado
+- El catálogo de la voz pasa de 303 a **299 frases** (las etiquetas de trazo
+  cambian: “vuelta de arriba/abajo” en el 8, “el palito/el palo/la base” en el 1).
+- `package.json` sube a **0.8.0**.
+
+### Notas
+- Verificado en el navegador: la **A** completa los 3 trazos, la barra cae exacta
+  entre las diagonales, la pauta se dibuja en 0,16 / 0,50 / 0,67 / 0,84 sobre el
+  lienzo y la recompensa da 3 ⭐ con 98 % de precisión.
+- La app **no cambia de comportamiento**: mismos ids, mismos recursos, mismos
+  umbrales. Solo la forma de la letra, la pista que se locuta y el fondo del
+  lienzo.
+
 ## [0.7.1] — 2026-10-02 · La voz de Lapi, más cálida y clara (ritmo y tono ajustados)
 
 ### Cambiado

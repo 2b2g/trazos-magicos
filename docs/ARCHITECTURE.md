@@ -196,6 +196,30 @@ para evitar ambigüedad módulo 2π), `wave`, `zigzag`. **Añadir una letra**
 `families.ts` sin tocar código. Los tests de `tests/engine.test.ts`
 validan continuidad geométrica (ningún salto > 40 px) de todo el catálogo.
 
+### 9.1 Caja de escritura y fidelidad de la forma (0.8.0)
+
+Las 27 letras y los 10 números **no llevan números escritos a ojo**: se construyen
+con la métrica única de `content/writingBox.ts` (ceja 0,16 · altura de barras
+0,50 · media 0,67 · base 0,84 · columnas 0,24/0,76), y las piezas que se tocan se
+tocan porque **se calculan** (`diagX()`, `cBody()`, `bowl()`, `ring()`), no porque
+alguien las escribiera cerca. Antes la barra de la A iba de 0,28 a 0,72 y se
+salía de la letra por los dos lados, y la "~" de la Ñ caía dentro de la caja
+de la N en vez de encima.
+
+| Pieza | Dónde |
+|---|---|
+| Métrica compartida + helpers de geometría | `content/writingBox.ts` |
+| Letras construidas con ella | `content/lettersPhaseC.ts` |
+| Números (estilo europeo: 1 con palito y base, 4 cerrado, 7 sin raya, 9 recto) | `content/numbersPhaseD.ts` |
+| Pauta de 4 líneas que pinta el motor | `ResourceDef.guideLines` → `engine/render.ts` |
+| Garantías (10 tests) | `tests/engine.test.ts` → *fidelidad de la caja de escritura* |
+
+- **La pauta**: el contenido declara las líneas (`guideLines`, en `y`
+  normalizado) y el render solo las pinta — el motor no sabe qué es una letra.
+  Las fases A y B (trazos sueltos) no declaran ninguna, así que no ven pauta.
+- **Estilo de escritura**: mayúsculas y cifras comparten altura y caja, para que
+  el niño perciba "una fila de letras" y no 37 símbolos sueltos.
+
 ## 10. PWA y compatibilidad Android 5 (Chromium 37)
 
 | Restricción | Decisión |

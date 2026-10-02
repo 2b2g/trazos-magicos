@@ -3,7 +3,7 @@
    activo, punto de inicio pulsante, flecha de dirección, tinta del
    niño y la animación de demostración. Todo con Canvas 2D básico. */
 
-import { Vec2 } from "./types";
+import { Vec2, GuideLine } from "./types";
 import { pathLength } from "./sampling";
 import { v } from "./geom";
 
@@ -26,11 +26,19 @@ export interface RenderState {
   user: Vec2[][];
   /** Trazo en curso (mientras el dedo se mueve). */
   live: Vec2[] | null;
+  /**
+   * Pauta de escritura detrás del grafema (letras y números): las 4
+   * líneas del cuaderno en `y` normalizado. Vacío = sin pauta (las
+   * fases A y B dibujan trazos sueltos, sin caja de escritura).
+   */
+  guide: GuideLine[];
 }
 
 export interface Theme {
   bg: string;
   guide: string;
+  /** Color de la pauta de escritura (letras y números). */
+  paper: string;
   corridor: string;
   active: string;
   done: string;
@@ -48,6 +56,7 @@ export interface Theme {
 export const DEFAULT_THEME: Theme = {
   bg: "#ffffff",
   guide: "#dfe3ef",
+  paper: "#c9d2e8",
   corridor: "rgba(95, 40, 207, 0.15)",
   active: "#5f28cf",
   done: "#2fb45c",
@@ -202,6 +211,24 @@ export class TraceRenderer {
     ctx.fillRect(0, 0, this.w, this.h);
 
     var i: number;
+    // --- pauta de escritura (ceja, barras, media, base): debajo de todo
+    if (s.guide && s.guide.length) {
+      ctx.save();
+      ctx.strokeStyle = theme.paper;
+      ctx.lineWidth = Math.max(1, base * 0.008);
+      for (i = 0; i < s.guide.length; i++) {
+        var g = s.guide[i];
+        var gy = Math.round(g.y * this.h) + 0.5;
+        ctx.setLineDash(g.dashed ? [base * 0.05, base * 0.04] : []);
+        ctx.beginPath();
+        ctx.moveTo(base * 0.04, gy);
+        ctx.lineTo(this.w - base * 0.04, gy);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     // --- plantilla
     for (i = 0; i < s.paths.length; i++) {
       var isCurrent = i === s.current;

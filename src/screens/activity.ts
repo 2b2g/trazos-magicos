@@ -138,6 +138,8 @@ export function renderActivity(
     current: 0,
     guideVisible: true,
     templateAlpha: 0.9,
+    // pauta de escritura: solo letras y números declaran sus 4 líneas
+    guide: resource.guideLines || [],
     hidden: strokes.map(function () {
       return false;
     }),

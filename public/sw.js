@@ -7,8 +7,12 @@
    la versión purga las cachés anteriores en `activate`.
 
    v5: los mismos MP3 se regrabaron con otro tono (pitch 1.06), así que
-   la caché v4 seguía sirviendo el audio anterior. */
-var CACHE = "garabati-v5";
+   la caché v4 seguía sirviendo el audio anterior.
+
+   v6: se rehízo la geometría de las letras y los números, así que
+   cambiaron las frases locutadas (pistas de trazo) y hay MP3 nuevos
+   y huérfanos: la caché v5 no sirve. */
+var CACHE = "garabati-v6";
 var CORE = [
   "./",
   "./index.html",

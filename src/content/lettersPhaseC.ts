@@ -1,46 +1,35 @@
-import { ResourceDef, Segment } from "../engine/types";
+import { ResourceDef } from "../engine/types";
+import {
+  BAR,
+  BASE,
+  CAP,
+  CX,
+  GUIDE_LINES,
+  L,
+  R,
+  XH,
+  arcDeg,
+  bowl,
+  cBody,
+  cb,
+  diagX,
+  ln,
+  ring,
+} from "./writingBox";
 
 /* FASE C — El Abecedario Mágico: 27 mayúsculas (incluida Ñ), organizadas
-   por familias motoras (FDD §11–12). Primero las fáceles. */
+   por familias motoras (FDD §11–12). Primero las fáciles.
 
-const U = 0.16; // margen horizontal estándar
-const TOP = 0.14;
-const MID = 0.5;
-const BOT = 0.86;
-
-const qd = (ax: number, ay: number, cx: number, cy: number, bx: number, by: number): Segment => ({
-  kind: "quad",
-  a: { x: ax, y: ay },
-  cp: { x: cx, y: cy },
-  b: { x: bx, y: by },
-});
-const ln = (ax: number, ay: number, bx: number, by: number): Segment => ({
-  kind: "line",
-  a: { x: ax, y: ay },
-  b: { x: bx, y: by },
-});
-const ar = (
-  cx: number,
-  cy: number,
-  rx: number,
-  ry: number,
-  start: number,
-  sweep: number,
-  ccw?: boolean
-): Segment => ({ kind: "arc", cx: cx, cy: cy, rx: rx, ry: ry, start: start, sweep: sweep, ccw: ccw });
-const wv = (ax: number, ay: number, bx: number, by: number, amp: number, waves: number): Segment => ({
-  kind: "wave",
-  a: { x: ax, y: ay },
-  b: { x: bx, y: by },
-  amp: amp,
-  waves: waves,
-});
+   Todas las grafías se construyen con la métrica de `writingBox.ts`
+   (misma ceja, misma base, mismos ejes) y con curvas de verdad: cada
+   barra o pata que se une a otra se apoya en el punto exacto donde
+   se encuentran, calculado y no estimado. */
 
 function letter(
   char: string,
   family: string,
   difficulty: 1 | 2 | 3,
-  strokeList: Array<[string, string, Segment[]]>,
+  strokeList: Array<[string, string, ResourceDef["strokes"][number]["segments"]]>,
   speech: string[],
   meaning: { emoji: string; word: string },
   altOrders?: string[][]
@@ -61,67 +50,74 @@ function letter(
     meaningEmoji: meaning.emoji,
     meaningWord: meaning.word,
     altOrders: altOrders,
+    guideLines: GUIDE_LINES,
   };
 }
 
 /* ---------------- FAMILIA 1 · LÍNEAS ---------------- */
 
+/* La I es un palo CENTRADO: antes iba pegada al margen izquierdo y
+   parecía una-raya suelta, no una letra. */
 const I = letter("I", "líneas", 1,
-  [["s1", "hacia abajo", [ln(U, TOP, U, BOT)]]],
+  [["s1", "hacia abajo", [ln(CX, CAP, CX, BASE)]]],
   ["La I.", "Una línea hacia abajo."],
   { emoji: "🪁", word: "Isla" });
 
 const Le = letter("L", "líneas", 1,
   [
-    ["s1", "hacia abajo", [ln(U, TOP, U, BOT)]],
-    ["s2", "hacia la derecha", [ln(U, BOT, 0.7, BOT)]],
+    ["s1", "hacia abajo", [ln(L, CAP, L, BASE)]],
+    ["s2", "hacia la derecha", [ln(L, BASE, BAR, BASE)]],
   ],
   ["La L.", "Abajo y luego a la derecha."],
   { emoji: "🌙", word: "Luna" });
 
 const T = letter("T", "líneas", 1,
   [
-    ["s1", "el techo", [ln(0.12, TOP, 0.88, TOP)]],
-    ["s2", "la pata", [ln(0.5, TOP, 0.5, BOT)]],
+    ["s1", "el techo", [ln(0.22, CAP, 0.78, CAP)]],
+    ["s2", "la pata", [ln(CX, CAP, CX, BASE)]],
   ],
   ["La T.", "Primero el techo, luego la pata."],
   { emoji: "🐢", word: "Tortuga" });
 
 const E = letter("E", "líneas", 1,
   [
-    ["s1", "la espalda", [ln(U, TOP, U, BOT)]],
-    ["s2", "el techo", [ln(U, TOP, 0.72, TOP)]],
-    ["s3", "la barriga", [ln(U, MID, 0.62, MID)]],
-    ["s4", "la pata", [ln(U, BOT, 0.72, BOT)]],
+    ["s1", "la espalda", [ln(L, CAP, L, BASE)]],
+    ["s2", "el techo", [ln(L, CAP, BAR, CAP)]],
+    ["s3", "la barriga", [ln(L, XH, 0.62, XH)]],
+    ["s4", "la pata", [ln(L, BASE, BAR, BASE)]],
   ],
   ["La E.", "La espalda y tres barras."],
   { emoji: "🐘", word: "Elefante" });
 
 const F = letter("F", "líneas", 1,
   [
-    ["s1", "la espalda", [ln(U, TOP, U, BOT)]],
-    ["s2", "el techo", [ln(U, TOP, 0.72, TOP)]],
-    ["s3", "la barriga", [ln(U, MID, 0.62, MID)]],
+    ["s1", "la espalda", [ln(L, CAP, L, BASE)]],
+    ["s2", "el techo", [ln(L, CAP, BAR, CAP)]],
+    ["s3", "la barriga", [ln(L, XH, 0.62, XH)]],
   ],
   ["La F.", "Como la E, pero sin pata."],
   { emoji: "🌸", word: "Flor" });
 
 const H = letter("H", "líneas", 2,
   [
-    ["s1", "pata izquierda", [ln(U, TOP, U, BOT)]],
-    ["s2", "pata derecha", [ln(0.84, TOP, 0.84, BOT)]],
-    ["s3", "el puente", [ln(U, MID, 0.84, MID)]],
+    ["s1", "pata izquierda", [ln(L, CAP, L, BASE)]],
+    ["s2", "pata derecha", [ln(R, CAP, R, BASE)]],
+    ["s3", "el puente", [ln(L, XH, R, XH)]],
   ],
   ["La H.", "Dos patas y un puente."],
   { emoji: "🧊", word: "Hielo" });
 
 /* ---------------- FAMILIA 2 · DIAGONALES ---------------- */
 
+/* La barra de la A se calculates sobre las diagonales: antes iba de
+   0.28 a 0.72 y se salía de la letra por los dos lados. */
+const A_BAR_Y = 0.58;
+
 const A = letter("A", "diagonales", 2,
   [
-    ["s1", "diagonal izquierda", [ln(U, BOT, 0.5, TOP)]],
-    ["s2", "diagonal derecha", [ln(0.5, TOP, 0.84, BOT)]],
-    ["s3", "la barriga", [ln(0.28, MID, 0.72, MID)]],
+    ["s1", "diagonal izquierda", [ln(L, BASE, CX, CAP)]],
+    ["s2", "diagonal derecha", [ln(CX, CAP, R, BASE)]],
+    ["s3", "la barriga", [ln(diagX(A_BAR_Y, CX, L), A_BAR_Y, diagX(A_BAR_Y, CX, R), A_BAR_Y)]],
   ],
   ["La A.", "Dos diagonales y una barriga."],
   { emoji: "✈️", word: "Avión" },
@@ -129,18 +125,19 @@ const A = letter("A", "diagonales", 2,
 
 const V = letter("V", "diagonales", 1,
   [
-    ["s1", "baja", [ln(U, TOP, 0.5, BOT)]],
-    ["s2", "sube", [ln(0.5, BOT, 0.84, TOP)]],
+    ["s1", "baja", [ln(L, CAP, CX, BASE)]],
+    ["s2", "sube", [ln(CX, BASE, R, CAP)]],
   ],
   ["La V.", "Baja y sube, como un valle."],
   { emoji: "🐄", word: "Vaca" });
 
+/* Las dos valleys del W son simétricas respecto al centro. */
 const W = letter("W", "diagonales", 2,
   [
-    ["s1", "baja", [ln(U, TOP, 0.28, BOT)]],
-    ["s2", "sube", [ln(0.28, BOT, 0.5, TOP)]],
-    ["s3", "baja", [ln(0.5, TOP, 0.72, BOT)]],
-    ["s4", "sube", [ln(0.72, BOT, 0.84, TOP)]],
+    ["s1", "baja", [ln(L, CAP, 0.37, BASE)]],
+    ["s2", "sube", [ln(0.37, BASE, CX, CAP)]],
+    ["s3", "baja", [ln(CX, CAP, 0.63, BASE)]],
+    ["s4", "sube", [ln(0.63, BASE, R, CAP)]],
   ],
   ["La W.", "Dos valles seguidos."],
   { emoji: "🍉", word: "Sandía" },
@@ -148,72 +145,89 @@ const W = letter("W", "diagonales", 2,
 
 const X = letter("X", "diagonales", 2,
   [
-    ["s1", "cruza", [ln(U, TOP, 0.84, BOT)]],
-    ["s2", "cruza", [ln(0.84, TOP, U, BOT)]],
+    ["s1", "cruza", [ln(L, CAP, R, BASE)]],
+    ["s2", "cruza", [ln(R, CAP, L, BASE)]],
   ],
   ["La X.", "Dos rayitas cruzadas."],
   { emoji: "🎵", word: "Xilófono" },
   [["s1", "s2"], ["s2", "s1"]]);
 
+/* La Y se junta en el punto medio exacto de la altura de barras. */
 const Y = letter("Y", "diagonales", 2,
   [
-    ["s1", "brazo izquierdo", [ln(U, TOP, 0.5, MID)]],
-    ["s2", "brazo derecho", [ln(0.84, TOP, 0.5, MID)]],
-    ["s3", "la pata", [ln(0.5, MID, 0.5, BOT)]],
+    ["s1", "brazo izquierdo", [ln(L, CAP, CX, XH)]],
+    ["s2", "brazo derecho", [ln(R, CAP, CX, XH)]],
+    ["s3", "la pata", [ln(CX, XH, CX, BASE)]],
   ],
   ["La Y.", "Dos brazos y una pata."],
   { emoji: "🥛", word: "Yogur" });
 
+/* La K: las dos ramas nacen en el MISMO punto de la columna. */
+const K_JUNCTION_Y = 0.46;
+const K_ARM_X = 0.7;
+
 const K = letter("K", "diagonales", 2,
   [
-    ["s1", "la espalda", [ln(U, TOP, U, BOT)]],
-    ["s2", "el brazo abierto", [ln(0.66, 0.22, U, MID), ln(U, MID, 0.66, BOT)]],
+    ["s1", "la espalda", [ln(L, CAP, L, BASE)]],
+    [
+      "s2",
+      "el brazo abierto",
+      [ln(K_ARM_X, CAP, L, K_JUNCTION_Y), ln(L, K_JUNCTION_Y, K_ARM_X, BASE)],
+    ],
   ],
   ["La K.", "Una pared y un brazo que abre y cierra."],
   { emoji: "🐨", word: "Koala" },
   [["s1", "s2"], ["s2", "s1"]]);
 
+/* La Z es un solo trazo continuo de tres tramos. */
 const Z = letter("Z", "diagonales", 2,
   [[
     "s1",
     "el rayo",
-    [ln(0.14, TOP, 0.86, TOP), ln(0.86, TOP, U, BOT), ln(U, BOT, 0.86, BOT)],
+    [ln(L, CAP, R, CAP), ln(R, CAP, L, BASE), ln(L, BASE, R, BASE)],
   ]],
   ["La Z.", "Como un rayo: arriba, diagonal y base."],
   { emoji: "🦊", word: "Zorro" });
 
 /* ---------------- FAMILIA 3 · CURVAS ---------------- */
 
+/* C: arco de 270° que abre 90°, con la altura exacta de la mayúscula. */
 const C = letter("C", "curvas", 1,
-  [["s1", "curva que abraza", [ar(0.5, MID, 0.36, 0.36, -Math.PI / 4, (Math.PI * 3) / 2, true)]]],
+  [["s1", "curva que abraza", [cBody()]]],
   ["La C.", "Una curva que abraza."],
   { emoji: "🏠", word: "Casa" });
 
+/* O: elipse de 0.56 × 0.68 (más alta que ancha, como una letra). */
 const O = letter("O", "curvas", 1,
-  [["s1", "círculo redondo", [ar(0.5, MID, 0.36, 0.36, -Math.PI / 2, Math.PI * 2, true)]]],
+  [["s1", "círculo redondo", [ring(CX, XH, 0.28, (BASE - CAP) / 2)]]],
   ["La O.", "Un círculo redondo."],
   { emoji: "🐻", word: "Oso" });
+
+/* U: los dos palos y el arco de abajo se tocan en los mismos puntos. */
+const U_ARC_Y = 0.62;
 
 const Uu = letter("U", "curvas", 2,
   [[
     "s1",
     "bajó y subió",
     [
-      ln(U, TOP, U, 0.62),
-      ar(0.5, 0.62, 0.34, 0.24, Math.PI, Math.PI, true),
-      ln(0.84, 0.62, 0.84, TOP),
+      ln(L, CAP, L, U_ARC_Y),
+      arcDeg(CX, U_ARC_Y, 0.26, BASE - U_ARC_Y, 180, 180, true),
+      ln(R, U_ARC_Y, R, CAP),
     ],
   ]],
   ["La U.", "Bajas, curvas por abajo y subes."],
   { emoji: "🍇", word: "Uvas" });
 
+/* S: dos medios arcos reales que se encuentran en (0.5, 0.5) y whose
+   cola apoya justo en la línea base. */
 const S = letter("S", "curvas", 2,
   [[
     "s1",
     "serpiente",
     [
-      ar(0.47, 0.33, 0.28, 0.2, -Math.PI / 4, Math.PI * 1.25, true),
-      ar(0.51, 0.67, 0.28, 0.2, -Math.PI / 2, Math.PI * 1.25, false),
+      arcDeg(CX, 0.33, 0.24, 0.17, -30, 240, true),
+      arcDeg(CX, 0.67, 0.24, 0.17, -90, 180, false),
     ],
   ]],
   ["La S.", "Como una serpiente."],
@@ -221,94 +235,117 @@ const S = letter("S", "curvas", 2,
 
 /* ---------------- FAMILIA 4 · CURVAS + LÍNEAS ---------------- */
 
+/* D: pared + media elipse que arranca y acaba en la pared. */
 const D = letter("D", "curvas y líneas", 2,
   [
-    ["s1", "la pared", [ln(U, TOP, U, BOT)]],
-    ["s2", "la barriga", [ar(0.16, MID, 0.68, 0.36, -Math.PI / 2, Math.PI)]],
+    ["s1", "la pared", [ln(L, CAP, L, BASE)]],
+    ["s2", "la barriga", [bowl(L, CAP, BASE, 0.44)]],
   ],
   ["La D.", "Una pared y una barriga."],
   { emoji: "🐬", word: "Dado" });
 
+/* G: cuerpo de C + pata vertical + rabillo horizontal, unidos. */
+const G_STEM_X = 0.7;
+const G_STEM_TOP = 0.54;
+
 const G = letter("G", "curvas y líneas", 3,
   [
-    ["s1", "la barriga", [ar(0.5, MID, 0.34, 0.34, -Math.PI / 4, Math.PI * 1.75, true)]],
-    ["s2", "la patita", [ln(0.84, MID, 0.84, 0.72)]],
-    ["s3", "el rabillo", [ln(0.84, 0.72, 0.66, 0.72)]],
+    ["s1", "la barriga", [cBody()]],
+    ["s2", "la patita", [ln(0.698, 0.74, G_STEM_X, G_STEM_TOP)]],
+    ["s3", "el rabillo", [ln(G_STEM_X, G_STEM_TOP, 0.5, G_STEM_TOP)]],
   ],
   ["La G.", "Una C con una patita."],
   { emoji: "🍪", word: "Galleta" });
 
+/* P y R: la barriga va de la ceja a la altura de barras. */
+const BOWL_XH = 0.4;
+
 const P = letter("P", "curvas y líneas", 2,
   [
-    ["s1", "la pared", [ln(U, TOP, U, BOT)]],
-    ["s2", "la barriga", [ar(0.16, 0.37, 0.48, 0.23, -Math.PI / 2, Math.PI)]],
+    ["s1", "la pared", [ln(L, CAP, L, BASE)]],
+    ["s2", "la barriga", [bowl(L, CAP, XH, BOWL_XH)]],
   ],
   ["La P.", "Una pared y una barriga arriba."],
   { emoji: "🐧", word: "Pelota" });
 
-const R = letter("R", "curvas y líneas", 3,
+/* La pata de la R nace en la unión exacta de la barriga con la pared.
+   La constante se llama `Rlet` porque `R` es el eje derecho de la caja
+   de escritura importado de `writingBox`. */
+const Rlet = letter("R", "curvas y líneas", 3,
   [
-    ["s1", "la pared", [ln(U, TOP, U, BOT)]],
-    ["s2", "la barriga", [ar(0.16, 0.37, 0.48, 0.23, -Math.PI / 2, Math.PI)]],
-    ["s3", "la pata", [ln(0.44, 0.56, 0.74, BOT)]],
+    ["s1", "la pared", [ln(L, CAP, L, BASE)]],
+    ["s2", "la barriga", [bowl(L, CAP, XH, BOWL_XH)]],
+    ["s3", "la pata", [ln(L, XH, 0.7, BASE)]],
   ],
   ["La R.", "Como la P, con una pata."],
   { emoji: "🤖", word: "Ratón" });
+
+/* J: palo + gancho de media circunferencia exacta. */
+const J_HOOK_Y = 0.68;
+const J_STEM_X = 0.68;
 
 const J = letter("J", "curvas y líneas", 2,
   [[
     "s1",
     "el gancho",
-    [ln(0.84, TOP, 0.84, 0.6), qd(0.84, 0.6, 0.86, 0.92, 0.34, 0.86)],
+    [ln(J_STEM_X, CAP, J_STEM_X, J_HOOK_Y), arcDeg(0.52, J_HOOK_Y, 0.16, 0.16, 0, 180, false)],
   ]],
   ["La J.", "Bajas y haces un gancho."],
   { emoji: "🦒", word: "Jirafa" });
 
 /* ---------------- FAMILIA 5 · COMPLEJAS ---------------- */
 
+/* B: la barriga de abajo es más ancha que la de arriba, como en las
+   tipografías reales. */
 const B = letter("B", "complejas", 3,
   [
-    ["s1", "la pared", [ln(U, TOP, U, BOT)]],
-    ["s2", "barriga de arriba", [ar(0.16, 0.36, 0.46, 0.22, -Math.PI / 2, Math.PI)]],
-    ["s3", "barriga de abajo", [ar(0.16, 0.64, 0.54, 0.22, -Math.PI / 2, Math.PI)]],
+    ["s1", "la pared", [ln(L, CAP, L, BASE)]],
+    ["s2", "barriga de arriba", [bowl(L, CAP, XH, 0.38)]],
+    ["s3", "barriga de abajo", [bowl(L, XH, BASE, 0.46)]],
   ],
   ["La B.", "Una pared y dos barrigas."],
   { emoji: "⛵", word: "Barco" });
 
+/* M: los valles bajan solo hasta un poco más de la mitad. */
+const M_VALLEY_Y = 0.58;
+
 const M = letter("M", "complejas", 3,
   [
-    ["s1", "pata izquierda", [ln(U, TOP, U, BOT)]],
-    ["s2", "primera montaña", [ln(U, TOP, 0.5, 0.62)]],
-    ["s3", "segunda montaña", [ln(0.5, 0.62, 0.84, TOP)]],
-    ["s4", "pata derecha", [ln(0.84, TOP, 0.84, BOT)]],
+    ["s1", "pata izquierda", [ln(L, CAP, L, BASE)]],
+    ["s2", "primera montaña", [ln(L, CAP, CX, M_VALLEY_Y)]],
+    ["s3", "segunda montaña", [ln(CX, M_VALLEY_Y, R, CAP)]],
+    ["s4", "pata derecha", [ln(R, CAP, R, BASE)]],
   ],
   ["La M.", "Dos patas y dos montañas."],
   { emoji: "🍎", word: "Manzana" });
 
+/* N: la diagonal va de la ceja izquierda a la base derecha, que es
+   como se escribe (antes iba al revés y la voz describía mal). */
 const N = letter("N", "complejas", 2,
   [
-    ["s1", "pata izquierda", [ln(U, TOP, U, BOT)]],
-    ["s2", "la diagonal", [ln(U, BOT, 0.84, TOP)]],
-    ["s3", "pata derecha", [ln(0.84, TOP, 0.84, BOT)]],
+    ["s1", "pata izquierda", [ln(L, CAP, L, BASE)]],
+    ["s2", "la diagonal", [ln(L, CAP, R, BASE)]],
+    ["s3", "pata derecha", [ln(R, CAP, R, BASE)]],
   ],
-  ["La N.", "Abajo, arriba y abajo."],
+  ["La N.", "Dos patas y una diagonal."],
   { emoji: "☁️", word: "Nube" });
 
+/* Q: la vuelta se pasa por dentro y la colita cruza la base. */
 const Q = letter("Q", "complejas", 3,
   [
-    ["s1", "círculo redondo", [ar(0.5, MID, 0.34, 0.34, -Math.PI / 2, Math.PI * 2)]],
-    ["s2", "la colita", [ln(0.62, 0.68, 0.8, 0.9)]],
+    ["s1", "círculo redondo", [ring(CX, XH, 0.28, (BASE - CAP) / 2)]],
+    ["s2", "la colita", [ln(0.66, 0.68, 0.8, 0.9)]],
   ],
   ["La Q.", "Una O con una colita."],
   { emoji: "🧀", word: "Queso" });
 
-/* Ñ — letra independiente del alfabeto español (FDD §3) */
+/* Ñ: como la N, y la "~" POR ENCIMA de la ceja (antes caía dentro). */
 const ENYE = letter("Ñ", "complejas", 3,
   [
-    ["s1", "pata izquierda", [ln(U, TOP, U, BOT)]],
-    ["s2", "la diagonal", [ln(U, BOT, 0.84, TOP)]],
-    ["s3", "pata derecha", [ln(0.84, TOP, 0.84, BOT)]],
-    ["s4", "el sombrerito", [wv(0.28, 0.26, 0.72, 0.26, 0.06, 1.5)]],
+    ["s1", "pata izquierda", [ln(L, CAP, L, BASE)]],
+    ["s2", "la diagonal", [ln(L, CAP, R, BASE)]],
+    ["s3", "pata derecha", [ln(R, CAP, R, BASE)]],
+    ["s4", "el sombrerito", [cb(0.3, 0.105, 0.38, 0.055, 0.62, 0.155, 0.7, 0.105)]],
   ],
   ["La Ñ.", "Como la N, con un sombrerito."],
   { emoji: "🐦", word: "Niño" });
@@ -317,7 +354,7 @@ export const PHASE_C_LETTERS: ResourceDef[] = [
   I, Le, T, E, F, H,
   A, V, W, X, Y, K, Z,
   C, O, S, Uu,
-  D, G, P, R, J,
+  D, G, P, Rlet, J,
   B, M, N, Q,
   ENYE,
 ];
