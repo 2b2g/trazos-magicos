@@ -1,4 +1,4 @@
-# Arquitectura — Trazos Mágicos
+# Arquitectura — Garabati
 
 > Documento vivo: **cada cambio de código relevante debe reflejarse aquí y en `docs/CHANGELOG.md`.**
 
@@ -21,12 +21,15 @@ estático: `dist/` (HTML + bundle moderno + bundle ES5 legacy + CSS + SW).
 │  │                       ↓             ↑                      │   │
 │  │  touch (entrada) → evaluator (veredicto) → demo (animación)│   │
 │  └───────────────────────────┬────────────────────────────────┘   │
-│  services: audio (TTS+SFX) · storage (localStorage) · util/dom    │
+│  ui: mascot (Liro) · decor (cielo) ── util/dom · util/fx (confeti) │
+│  services: audio (TTS+SFX) · storage (localStorage) · content/brand │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Regla de dependencias**: `screens → services + engine + content`;
-`engine` no conoce pantallas; `content` solo define datos con tipos de `engine/types`.
+**Regla de dependencias**: `screens → ui + services + engine + content`;
+`engine` no conoce pantallas; `ui/` solo pinta a partir de datos simples
+(estado de ánimo, estrellas); `content` solo define datos con tipos de `engine/types`.
+Ver §13 para el sistema de diseño y sus reglas de compatibilidad.
 
 ## 2. Flujo de una actividad (secuencia real)
 
@@ -160,6 +163,10 @@ validan continuidad geométrica (ningún salto > 40 px) de todo el catálogo.
 | DPR alto en gama baja | canvas a 1.5× máx |
 | Service Worker desde Chrome 40 | cache-first para assets hash, network-first para navegación |
 | `setPointerCapture` frágil | try/catch defensivo |
+| Sin `clamp()`/`min()`/`max()` ni `clip-path` | tamaños en `vmin` con media query en px para pantallas cortas |
+| Sin woff2 en Safari 9 | `@font-face` con woff2 **y** woff + pila de respaldo del sistema |
+| Emoji posteriores a 2014 no existen | solo emoji pre-2014 de un solo code point (nada de ZWJ) |
+| Font variable (Fredoka del repo) no soportada | se autohospeda **Fredoka One** estática (OFL) en `public/fonts/` |
 
 ## 11. Despliegue (Docker)
 
@@ -187,6 +194,65 @@ validan continuidad geométrica (ningún salto > 40 px) de todo el catálogo.
   modo offline. Recomendado: reverse proxy TLS delante (Caddy/Traefik).
 - Healthcheck con `wget --spider` cada 30 s; el puerto interno es 8080.
 
+## 13. Sistema de diseño de UI (0.5.0)
+
+Estética para 3–6 años (etapa preoperacional): **grande, brillante,
+redondo, sonoro, con caras, un solo camino, feedback inmediato y
+celebración constante**. La estética no es decoración: a esta edad es la
+interfaz.
+
+### Tokens (literales en `src/styles.css`, sin `var()`)
+
+| Uso | Color | Nota |
+|---|---|---|
+| Cielo (fondo) | `#5cc4f5 → #a9e4ff → #e7f9ff` | degradado vertical |
+| Sol (acción principal, nodo actual) | `#ffd23f` | texto tinta |
+| Uva (marca, trazo activo, botones severos) | `#5f28cf` | texto blanco (7.8:1) |
+| Hierba (avanzar / conseguido) | `#4ee08a` | texto tinta |
+| Coral (atrás / cancelar) | `#ff7a7a` | texto tinta oscura |
+| Tinta (texto) | `#231a3d` | ≥ 7:1 sobre sol, hierba, cielo, coral y blanco |
+
+Máximo 4–5 colores dominantes por pantalla; la semántica nunca se
+invierte (verde = avanzar, coral = atrás).
+
+### Piezas reutilizables
+
+- **`.btn`** (`--green/--purple/--coral/--sky/--white/--orange`, `--sm`,
+  `--big`, `--icon`): botón físico con sombra sólida, relieve interior y
+  hundimiento al pulsar. Mínimo táctil 80×64 px (68 px en pantallas de
+  menos de 460 px de alto, nunca por debajo de 60 px).
+- **`.pill`**: chapa de progreso y conmutadores de un toque (⭐ estrellas,
+  🔊/🔇 sonido); el progreso vive siempre en una esquina.
+- **`.node`** (`--done`, `--current`, `--locked`): nodo del sendero; el
+  actual pulsa y emite un halo, el bloqueado duerme (💤) en vez de prohibir.
+- **`.mascot`** (`src/ui/mascot.ts`): Liro, lápiz con cara; emociones
+  `idle`/`happy`/`oh`/`party` y escalado por etapa de estrellas.
+- **`.bubble`**: bocadillo de Liro, siempre con voz (TTS) acompañando.
+- **`.reward-layer` + `util/fx`**: celebración con confeti, estrellas
+  secuenciales y mascota bailando.
+
+### Reglas de interacción
+
+- Solo **tap** y **drag simple**; ningún gesto complejo ni long-press para
+  el niño (el único hold es la puerta parental de adultos).
+- **Feedback multimodal inmediato** en cada toque: sonido + animación +
+  vibración cuando existe (`buzz`).
+- Máximo 3–5 botones por pantalla, jerarquía de dos niveles
+  (perfiles → mapa → actividad → recompensa) con **atrás grande siempre
+  visible** y el resto del camino en una sola pantalla (sin scroll infinito
+  ni menús hamburguesa).
+- **Nunca castigo visual**: los fallos solo producen ánimo de Liro y
+  tolerancia adaptativa (§4).
+
+### Rendimiento y accesibilidad
+
+- Animaciones con `transform`/`opacity` y 300–500 ms ease-out; el confeti
+  se autodestruye y usa 16–26 piezas para no castigar la GPU de gama baja.
+- El texto va siempre acompañado de icono y voz; tamaños ≥ 24 px en móvil y
+  ≥ 40 px en tablet (los `vmin` van con suelo en px en pantallas cortas).
+- Sin publicidad, sin compras, sin dark patterns; el único control de
+  adultos está tras la puerta de 3 s.
+
 ## 12. Mantenimiento de la documentación
 
 - Cambio de comportamiento → actualizar la sección correspondiente aquí +
@@ -194,3 +260,8 @@ validan continuidad geométrica (ningún salto > 40 px) de todo el catálogo.
 - Nuevo módulo → añadirlo al árbol de §1 y a la tabla de §10 si toca
   compatibilidad.
 - Los umbrales pedagógicos (§4) solo se cambian con test que los respalde.
+- Tocar la UI → respetar las reglas duras de §13 (tokens, tamaños táctiles,
+  compatibilidad CSS y de emoji) y anotarlo en el CHANGELOG.
+- Renombrar el producto → `src/content/brand.ts` + manifest + `index.html` +
+  `package.json` + `sw.js` + Docker; `tests/brand.test.ts` verifica que no
+  quede ninguna mención al nombre anterior en la app.

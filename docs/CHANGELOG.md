@@ -1,7 +1,70 @@
-# Registro de cambios — Trazos Mágicos
+# Registro de cambios — Garabati
 
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
+
+## [0.5.0] — 2026-10-02 · Garabati: rediseño de UI para 3–6 años
+
+### Cambiado
+- **El producto pasa a llamarse Garabati**: `index.html`, manifest PWA
+  (`name`/`short_name`), `package.json` (`garabati@0.5.0`), caché del
+  service worker (`garabati-v2`), imagen y servicio Docker (`garabati:latest`),
+  icono SVG y documentación. La fase A deja de llamarse "Trazos mágicos"
+  (ahora **Primeros trazos**) para no reciclar el nombre del producto.
+- **Interfaz rediseñada con la guía estética infantil**: fondo de cielo con
+  degradado, **sol con cara** y nubes que pasean; **máximo 4–5 colores**
+  dominantes por pantalla (cielo, sol, uva, hierba, coral) y texto tinta
+  `#231a3d` sobre fondos saturados (**≥ 7:1, WCAG AAA**).
+- **Botones físicos**: área táctil ≥ 64 px (ideal 80–120 px), radio 24–34 px,
+  relieve con sombra sólida y **hundimiento real** al pulsar
+  (`translateY(6px) scale(0.96)`), separación ≥ 18 px, y `:active` en todo
+  elemento tocable.
+- **Animaciones lentas y exageradas** (300–500 ms ease-out): entrada de
+  pantalla, rebote de la mascota, pulso del nodo actual, salto al acertar,
+  negación suave al fallar. Nunca hay animación de castigo.
+- **Tipografía balloon autohospedada**: Fredoka One (OFL, woff2 + woff con
+  respaldo) con pila de sistema `Baloo 2 → Quicksand → Comic Sans MS`.
+  Sin peticiones a Google Fonts: sigue funcionando offline.
+- **Tema del lienzo** (`engine/render.ts`): corredor y trazo activo en uva
+  `#5f28cf`, trazo conseguido en verde `#2fb45c`, tinta del niño en azul
+  brillante `#1f8fff`, punto de inicio naranja.
+- **Mapa**: HUD flotante con atrás grande (🏠 coral), píldora de estrellas
+  (progreso siempre visible), botón de sonido y ajustes; pestañas de fase
+  grandes y nodos 3D con sendero de puntos; el nodo bloqueado muestra 💤 y
+  Liro anima en vez de regañar.
+- **Actividad**: HUD con atrás y silencio a la vista, **progreso por puntos**
+  (no números), Liro que reacciona a cada intento y **recompensa con
+  confeti**, estrellas que aparecen una a una y mascota celebrando.
+- **Ajustes**: filas e interruptores más grandes (60 px de alto), mismos
+  textos para adultos tras la puerta de 3 s.
+- **Emojis compatibles con Android 5** (pre-2014): 🫶 → ❤️, 👩‍👦 → 👨,
+  🧩 → 🌀. Los ZWJ y los emoji posteriores a 2014 no se renderizan en
+  Android 5 y rompían la estética.
+- **nginx**: caché de 30 días para `/fonts/`.
+
+### Añadido
+- **`src/ui/mascot.ts` — Liro**, la mascota (un lápiz con cara dibujado en
+  CSS, sin imágenes): ojos grandes con brillo, mofletes y boca expresiva;
+  cuatro emociones (`idle`, `happy`, `oh`, `party`) y **tres etapas de
+  crecimiento** según las estrellas del perfil (0–4, 5–19, 20+ con corona).
+- **`src/ui/decor.ts`** — capa decorativa de cielo (sol con cara + tres nubes
+  a distintas velocidades, solo `transform`).
+- **`src/util/fx.ts`** — confeti de colores de la paleta y fila de estrellas
+  que aparecen una a una; ambos se autodestruyen y no usan librerías.
+- **`src/content/brand.ts`** — identidad (nombre, mascota, lema) en un solo
+  sitio: renombrar el producto vuelve a ser un cambio de un campo.
+- **Conmutador de sonido 🔊/🔇 de un toque** en mapa y actividad (además de
+  los interruptores de la puerta parental), persistido en los ajustes.
+- **Tests nuevos**: 4 de las etapas de la mascota y 5 de coherencia del
+  renombrado (manifest, título, paquete, Docker, service worker y ausencia
+  del nombre antiguo en la app) → **37 tests** en total.
+
+### Notas
+- Los PNG del icono (`icon-192.png`, `icon-512.png`) conservan el arte
+  anterior; el SVG ya usa la paleta nueva. Regenerarlos cuando haya
+  herramienta de rasterizado (no bloquea la instalación de la PWA).
+- El proyecto sigue sin dependencias de runtime: fuentes, efectos y mascota
+  son locales y offline.
 
 ## [0.4.0] — 2026-10-01 · Voz infantil y pausada
 

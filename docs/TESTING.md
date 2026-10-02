@@ -1,4 +1,4 @@
-# Estrategia de pruebas — Trazos Mágicos
+# Estrategia de pruebas — Garabati
 
 > Documento vivo: cualquier fix o funcionalidad nueva entra aquí con su resultado.
 
@@ -6,11 +6,11 @@
 
 | Nivel | Herramienta | Qué cubre |
 |---|---|---|
-| **Unitarios** | Vitest (`npm test`) | sampling, evaluación, umbrales, almacenamiento, integridad del contenido |
+| **Unitarios** | Vitest (`npm test`) | sampling, evaluación, umbrales, almacenamiento, integridad del contenido, mascota y marca |
 | **E2E sintético** | navegador + eventos Pointer sintéticos (`preview_evaluate`) | flujo completo real: perfiles → mapa → demo → trazado → recompensa → progreso |
 | **Checklist de dispositivo** | manual (README) | Android 5 WebView real, iPad, gama baja, offline, rechazo de palma |
 
-## 2. Suite unitaria (28 tests, todos en verde)
+## 2. Suite unitaria (37 tests, todos en verde)
 
 - `tests/engine.test.ts` — muestreo (extremos exactos, continuidad de la O,
   espaciado uniforme), evaluador (trazo perfecto, temblor infantil, trazo
@@ -24,6 +24,11 @@
   (un intento peor nunca resta), `completed` pegajoso, suma de estrellas,
   **JSON corrupto no rompe**, ajustes con defaults y merge, **localStorage
   bloqueado no rompe**.
+- `tests/mascot.test.ts` — **etapas de crecimiento de Liro** (0–4 ⭐, 5–19 ⭐,
+  20+ ⭐) y monotonía: más estrellas nunca hacen retroceder a la mascota.
+- `tests/brand.test.ts` — **coherencia del renombrado a Garabati**: manifest
+  PWA, `<title>`, `package.json`, imagen Docker, caché del service worker y
+  ausencia del nombre anterior en las pantallas.
 
 ## 3. Batería E2E en navegador (sesión de prueba intensiva)
 

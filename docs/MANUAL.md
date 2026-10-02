@@ -1,4 +1,4 @@
-# Manual para adultos — Trazos Mágicos
+# Manual para adultos — Garabati
 
 Guía para madres, padres, maestras y terapeutas que acompañen a un niño
 de 3 a 6 años.
@@ -14,7 +14,7 @@ Cada niño tiene su perfil con su progreso; se crean los que hagan falta.
 ## 2. Qué encuentra el niño
 
 - **El mapa**: cuatro mundos en orden pedagógico:
-  1. ✏️ **Trazos mágicos** — líneas, curvas, ondas, zigzag, círculo.
+  1. ✏️ **Primeros trazos** — líneas, curvas, ondas, zigzag, círculo.
   2. 🔷 **Formas y patrones** — cruz, colina, triángulo, cuadrado, casita, estrella.
   3. 🔤 **El Abecedario Mágico** — 27 mayúsculas (con Ñ) por familias motoras.
   4. 🔢 **Los Números Mágicos** — del 0 al 9 contando estrellas.
@@ -27,8 +27,17 @@ Cada niño tiene su perfil con su progreso; se crean los que hagan falta.
      la dirección.
   4. Si le cuesta, el juego **se vuelve más tolerante** y repite la demo del
      trazo. Nunca hay castigo ni "has fallado": solo "¡Casi! Inténtalo otra vez".
-  5. Al terminar: **estrellas** (siempre al menos una) y recompensa con
-     significado — "A de Avión" o cinco estrellas contadas en voz alta.
+  5. Al terminar: **celebración** con confeti, estrellas que aparecen una a
+     una (siempre al menos una) y recompensa con significado — "A de
+     Avión" o cinco estrellas contadas en voz alta.
+- **Liro crece contigo**: la mascota cambia de tamaño y gana un destello a
+  partir de 5 estrellas y una corona a partir de 20. Es el progreso visible
+  para quien todavía no lee números: un dibujo que mejora.
+- Arriba a la derecha están siempre las **⭐ estrellas ganadas** y el botón
+  **🔊/🔇** para silenciar o devolver el sonido de un toque (útil en el coche
+  o en el aula, sin entrar en los ajustes).
+- En cada actividad, los **puntos** bajo el lienzo indican cuántos trazos
+  lleva el niño: se ponen verdes al acertarlos. Nada de porcentajes.
 
 ## 3. Ajustes (puerta parental)
 
@@ -39,7 +48,7 @@ Mantén pulsada la **🔑** 3 segundos para entrar. Ahí puedes:
   peques sigan la frase (activada por defecto). Desactívala si prefieres
   una voz más natural para niños mayores.
 - **🎵 Efectos**: sonidos de acierto on/off.
-- **🫶 Modo extra fácil**: corredor de tolerancia más ancho y umbrales más
+- **❤️ Modo extra fácil**: corredor de tolerancia más ancho y umbrales más
   amables — recomendado para los más pequeños o con motricidad dificultada.
 - **🗑️ Borrar perfil actual**: requiere una segunda confirmación; borra solo
   ese progreso.
@@ -66,6 +75,7 @@ envío de datos a ningún servidor.
 |---|---|
 | No se oye la voz | Revisa 🔊 en ajustes; algunos navegadores necesitan el primer toque en pantalla para activar el audio |
 | El niño sale sin querer | La salida del mapa es el botón 🏠; los ajustes y el borrado están tras la puerta 🔑 |
-| Cambiar de niño | Botón 🚪 Salir → elegir otro perfil (el progreso de cada uno se conserva) |
+| Cambiar de niño | Botón 🏠 del mapa → elegir otro perfil (el progreso de cada uno se conserva) |
+| Suena y quiero silencio | Botón 🔇 arriba a la derecha (mapa o actividad); también en ajustes |
 | Pantalla pide girar | El juego es horizontal; gira la tableta |
 | Instalar como app | Chrome → menú → "Añadir a pantalla de inicio" (queda fullscreen y con soporte offline) |
