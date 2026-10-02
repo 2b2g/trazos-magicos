@@ -152,7 +152,8 @@ sayAll(["¡Muy bien!", "Hacia abajo."])
   `voice/silencio.mp3` (100 ms, volumen mínimo) para habilitar el elemento;
   si el navegador bloquea un clip, `onFallback` continúa con TTS.
 - **Ajuste 🐢 "voz pausada"** (por defecto): `playbackRate` 0.88 en los clips
-  (los MP3 ya se graban a 155 ppm, más lento que un locutor adulto).
+  (los MP3 ya se graban a 155 ppm y tono 1.06, más lento que un locutor
+  adulto: medido, 112 palabras/min dentro del juego).
 - **Efectos**: osciladores WebAudio procedurales (`strokeDone`, `success`,
   `retry`, `tap`, `unlockPrize`) — sin ficheros: offline total y 0 KB extra.
 - **Cambiar de voz**: `docs/VOICE.md` (servicios, costes, licencias y el
@@ -323,9 +324,20 @@ que nadie lo notase) y **la cola nunca corta una locución en curso**
 
 Estado actual: **303 MP3 con `Paulina (Español (México))`** (voz femenina
 es_MX del Mac, `provider: "macos"` en el manifiesto), generados con
-`--force --prune` y versionados en `public/voice/`. El juego no contacta
-con ningún servicio: los MP3 viajan en el bundle. Ojo con publicar: las
-voces de Apple valen para desarrollo (§3 de `docs/VOICE.md`).
+`--rate 155 --pitch 1.06 --force --prune` y versionados en `public/voice/`.
+El juego no contacta con ningún servicio: los MP3 viajan en el bundle. Ojo
+con publicar: las voces de Apple valen para desarrollo (§3 de
+`docs/VOICE.md`).
+
+**Ritmo y tono** (0.7.1): se barrieron 19 combinaciones de `--rate` ×
+`--pitch` midiendo duración, F0 y reparto espectral de cada muestra
+(`docs/VOICE.md` §5). Resultado: **155 ppm** (ritmo) y **1.06** (F0 173 Hz,
+un semitono sobre la voz natural) — cálido y claro para 3–6 años. Tres
+cosas que se aprendieron por el camino y conviene no volver a descubrir:
+`say` **cuantiza `--rate`** (145, 155 y 165 dan MP3 bit a bit idénticos, el
+ajuste fino de ritmo vive en el `playbackRate` del ajuste 🐢), `--pitch` **no
+altera la duración** (el `atempo` compensa el `asetrate`) y el tono es un
+**desplazamiento puro**, sin cambiar la expresividad.
 
 ## 12. Mantenimiento de la documentación
 

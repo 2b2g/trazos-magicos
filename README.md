@@ -25,7 +25,7 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 ```bash
 npm install
 npm run dev        # desarrollo → http://localhost:5173
-npm test           # 59 tests unitarios (motor, storage, mascota, marca, voz)
+npm test           # 61 tests unitarios (motor, storage, mascota, marca, voz)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
 ```
@@ -35,7 +35,7 @@ npm run preview    # servir dist/
 ```bash
 npm run voice:lines                                     # el guion completo del juego
 npm run voice:audition                                  # muestras para elegir voz (macOS)
-npm run voice:generate -- --voice "Paulina (Español (México))" --force --prune
+npm run voice:generate -- --voice "Paulina (Español (México))" --rate 155 --pitch 1.06 --force --prune
 ELEVENLABS_API_KEY=xxx npm run voice:generate -- --provider elevenlabs --voice "<ID>"
 ```
 
@@ -92,7 +92,8 @@ incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
 ## UI/UX para 3–6 años (decisiones aplicadas)
 
 - **Voz grabada, no robótica**: las **303 frases** del juego están
-  pre-renderizadas en MP3 (`public/voice/`, ~3 MB) y suenan igual en todas las
+  pre-renderizadas en MP3 (`public/voice/`, ~3 MB) con la voz **Paulina**
+  (es_MX) a 155 ppm y tono 1.06, y suenan igual en todas las
   tabletas, también sin conexión; la voz del sistema queda como respaldo. Ver
   [docs/VOICE.md](docs/VOICE.md).
 - **Sin lectura**: instrucciones habladas (español) + botones-icónicos grandes.

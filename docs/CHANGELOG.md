@@ -3,6 +3,47 @@
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
 
+## [0.7.1] — 2026-10-02 · La voz de Lapi, más cálida y clara (ritmo y tono ajustados)
+
+### Cambiado
+- **Los 303 MP3 se han regrabado** con la voz **Paulina (es_MX)** a
+  **`--rate 155 --pitch 1.06`** (antes `pitch 1.12`): la F0 baja de 183 a
+  **173 Hz** —un semitono, justo por encima de la voz natural— y el timbre
+  resulta **más cálido** sin entrar en la zona aguda y fina. La **duración de
+  los clips no cambia** (el tono se aplica con `asetrate`+`atempo`, que
+  compensan la velocidad), así que el encadenamiento *presentación → demo* y
+  el perro guardián de la cola siguen valiendo igual. **Un semitono medido es
+  lo que separa una voz "clara" de una voz "cálida" en 3–6 años**: por debajo
+  de ~1.0 se apaga, por encima de ~1.18 se afina.
+- **Ritmo elegido: 155 ppm** (bucket natural de `say`), que dentro del juego
+  con el ajuste 🐢 son **112 palabras por minuto y 11,3 caracteres/s**: pausado
+  para un peque de 3 años y sin feeling de arrastre en los ánimos cortos
+  (*"¡Bien hecho!"*).
+- **Service worker `garabati-v5`**: los MP3 conservan sus nombres, así que la
+  caché v4 habría servido el audio con el tono anterior; al activar se purga.
+- **`scripts/generate-voice.mjs`**: los valores por defecto pasan a ser los
+  que suenan en el repo (`Paulina (Español (México))`, `rate 155`,
+  `pitch 1.06`) y el resumen final imprime voz + ritmo + tono, para que una
+  regeneración sin flags no se lleve por delante el ajuste.
+- `package.json` sube a **0.7.1**.
+
+### Añadido
+- **`docs/VOICE.md` §5 "Ritmo y tono"**: el barrido de **19 combinaciones**
+  (`rate` 145/155/165 × `pitch` 1.00–1.24) con las tablas de duración, F0 y
+  energía en la banda de inteligibilidad 300–3400 Hz, más tres hallazgos
+  que no se oyen a oído: **`say` cuantiza `--rate`** (145, 155 y 165 producen
+  MP3 **bit a bit idénticos**; el ajuste fino de ritmo vive en el ajuste 🐢),
+  **`--pitch` no altera la duración** y el tono es un **desplazamiento puro**
+  (no cambia la expresividad).
+- `docs/ARCHITECTURE.md` §14 y `README` reflejan el comando canónico con
+  `--rate 155 --pitch 1.06`.
+
+### Notas
+- Sin cambios de comportamiento en la app: mismo manifiesto (los ids dependen
+  del texto, no de la voz), mismos 303 clips, ~3,2 MB.
+- Sigue en pie el aviso de licencias: antes de publicar hay que regenerar con
+  un proveedor con licencia de redistribución (`docs/VOICE.md` §3).
+
 ## [0.7.0] — 2026-10-02 · Voz de Paulina, mascota Lapi y locuciones que no se cortan
 
 ### Corregido

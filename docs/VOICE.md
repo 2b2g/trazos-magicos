@@ -47,7 +47,8 @@ audio.sayAll([...]) → VoiceSequencer     la que suena termina; la nueva espera
 - El juego **nunca mezcla** clip y TTS en la misma locución.
 - **Voz del juego: `Paulina (Español (México))`** (`es_MX`, voz femenina de
   macOS; la mascota, **Lapi**, es femenina). Los 303 MP3 del repositorio
-  están generados con ella y el manifiesto lo declara.
+  están generados con ella (`--rate 155 --pitch 1.06`, ver §5) y el manifiesto
+  lo declara.
 - Los audios viven en `public/voice/` (~3 MB) y el service worker los cachea al
   usarlos, así que se juega sin conexión.
 - Los tests (`tests/voice.test.ts`) fallan si el manifiesto, los ficheros y el
@@ -92,13 +93,15 @@ npm run voice:lines
 # → quedan en .voice/auditions/
 npm run voice:audition
 
-# generar TODO con las voces del Mac (lo que usa el repositorio hoy)
-npm run voice:generate -- --voice "Paulina (Español (México))" --prune
-# rehacer los 303 audios con otra voz desde cero
-npm run voice:generate -- --voice "Paulina (Español (México))" --force --prune
+# generar TODO con las voces del Mac (lo que usa el repositorio hoy;
+# Paulina + rate 155 + pitch 1.06 son ya los valores por defecto)
+npm run voice:generate -- --prune
+# rehacer los 303 audios desde cero (el comando canónico del repo)
+npm run voice:generate -- --voice "Paulina (Español (México))" --rate 155 \
+  --pitch 1.06 --concurrency 4 --force --prune
 
 # regenerar con otra voz / otro ritmo / otro tono
-npm run voice:generate -- --voice "Sandy (Español (México))" --rate 150 --pitch 1.08 --force
+npm run voice:generate -- --voice "Sandy (Español (México))" --rate 150 --pitch 1.12 --force
 
 # servicios en la nube (la clave solo vive en tu máquina, nunca en la app)
 ELEVENLABS_API_KEY=xxx npm run voice:generate -- --provider elevenlabs --voice "<VOICE_ID>"
@@ -125,10 +128,46 @@ sirve ya con la voz nueva y sin ninguna dependencia externa en ejecución.
 
 ## 5. detalles que conviene saber
 
+### Ritmo y tono (por qué 155 y 1.06)
+
+Los 303 MP3 se generan con `--rate 155 --pitch 1.06`. No es casualidad: se
+barreron 19 combinaciones (`--rate` 145/155/165 × `--pitch` 1.00–1.24)
+midiendo cada muestra con `ffprobe` y analizando el audio con numpy
+(F0 por autocorrelación y reparto espectral). Lo que salió:
+
+| `--rate` | dur. 20 frases | ritmo a la velocidad del juego (0.88) | veredicto |
+|---|---|---|---|
+| ≤ 154 (p. ej. 145) | 36,3 s | 102 palabras/min · 10,2 car/s | ~10 % más lento sin ganancia de claridad: cada frase se estira y el niño espera más |
+| **155 – 181** | **33,0 s** | **112 palabras/min · 11,3 car/s** | **el que se queda**: pausado para 3–6 años y sin arrastrar |
+| ≥ 182 | −4 % de duración | ~127 palabras/min · 12,8 car/s | ya demasiado rápido para una instrucción: descartado |
+
+| `--pitch` | F0 | energía 300–3400 Hz (banda de inteligibilidad) | veredicto |
+|---|---|---|---|
+| 1.00 | 162 Hz | 32,8 % | la voz natural, pero más apagada |
+| **1.06** | **173 Hz** | **34,6 %** | **el que se queda**: +1 semitono, cálido sin perder claridad |
+| 1.12 (0.7.0) | 183 Hz | 35,8 % | válido, algo más agudo |
+| 1.18 – 1.24 | 193–201 Hz | 37–39 % | más brillante pero fino, "chipmunk" en un móvil |
+
+Tres hallazgos que no se oían a ojo:
+
+- **`say` cuantiza `--rate`**: los valores de un mismo tramo producen MP3
+  **bit a bit idénticos** (145 vs 155 vs 165 → solo dos ritmos reales; los
+  cortes están en ~155, ~182 y ~190). Afinar el ritmo con `--rate` no tiene
+  sentido; el ajuste fino de ritmo vive en el ajuste 🐢 (`playbackRate`).
+- **`--pitch` no cambia la duración** (el `asetrate`+`atempo` de `toMp3`
+  desplaza el tono y devuelve la velocidad), así que las duraciones son
+  comparables entre tonos y el encadenamiento *presentación → demo* no varía
+  al tocar el tono.
+- **El tono es un desplazamiento puro**: la variación de F0 (p90−p10) es
+  proporcional al factor (~45 % del propio F0 en todos los casos), o sea
+  que `--pitch` no añade ni quita expresividad: elige por el F0 y déjalo.
+
 - **Ajuste 🐢 "voz pausada"** (activado por defecto en la puerta parental):
   reproduce los clips a `playbackRate` 0.88, sin cambiar el tono. Los MP3 se
-  graban a 155 palabras por minuto (un locutor adulto va a ~175), ya pensados
-  para 3–6 años.
+  graban a 155 ppm con tono 1.06 (un locutor adulto va a ~175 ppm), ya
+  pensados para 3–6 años: medidos en el juego, **112 palabras por minuto** y
+  11,3 caracteres por segundo. Si se busca aún más calma, ese ajuste 🐢 es
+  el sitio; bajar `--rate` no añade nada (`say` lo cuantiza).
 - **Desbloqueo de audio**: en el primer toque suena `voice/silencio.mp3`
   (100 ms, volumen mínimo) para que Chrome/Android permita los audios después.
 - **Si falta un audio**, esa locución completa pasa al TTS: el juego nunca se

@@ -16,8 +16,10 @@
    Opciones:
      --provider <macos|elevenlabs|openai|piper>   (por defecto macos)
      --voice <nombre|id>      voz del sistema o id del servicio
-     --rate <palabras-min>    macos: ritmo de habla (por defecto 155)
-     --pitch <factor>         macos/piper: tono (1.12 = voz más joven)
+     --rate <palabras-min>    macos: ritmo de habla (por defecto 155; ojo:
+                              `say` lo cuantiza, ver docs/VOICE.md §5)
+     --pitch <factor>         macos/piper: tono (por defecto 1.06 = un
+                              semitono arriba de la voz natural: cálido y claro)
      --lang <código>          piper/elevenlabs: idioma (es)
      --model <id>             piper: modelo .onnx | openai: gpt-4o-mini-tts
      --instructions <texto>   openai: estilo de la locución
@@ -69,8 +71,12 @@ const has = (k) => args[k] !== undefined && args[k] !== false;
 const val = (k, d) => (has(k) ? String(args[k]) : d);
 
 const PROVIDER = val("provider", "macos");
+/* Ritmo y tono que suenan los 303 MP3 del repositorio (ver docs/VOICE.md §5):
+   155 es el bucket natural de `say` y 1.06 baja ~10 Hz la F0 de Paulina
+   (183 → 173 Hz) sin perder energía en la banda de inteligibilidad. */
 const RATE = Number(val("rate", 155));
-const PITCH = Number(val("pitch", 1.12));
+const PITCH = Number(val("pitch", 1.06));
+const DEFAULT_VOICE = "Paulina (Español (México))";
 const LANG = val("lang", "es");
 const CONCURRENCY = Math.max(1, Number(val("concurrency", 3)));
 const LIMIT = has("limit") ? Number(args.limit) : 0;
@@ -146,7 +152,7 @@ const providers = {
   /** Voces del sistema macOS: gratis, local y sin cuentas.
       Ideal para prototipar; revisa licencias antes de publicar. */
   async macos({ text, id }) {
-    const voice = val("voice", "Flo (Español (España))");
+    const voice = val("voice", DEFAULT_VOICE);
     const aiff = path.join(TMP_DIR, id + ".aiff");
     const out = path.join(VOICE_DIR, id + ".mp3");
     await run("say", ["-v", voice, "-r", String(RATE), "-o", aiff, text]);
@@ -253,7 +259,7 @@ async function ensureSilence() {
 /* ---------- manifiesto ---------- */
 
 async function writeManifest(voiced) {
-  const voice = val("voice", "por defecto");
+  const voice = val("voice", DEFAULT_VOICE);
   const body = `/* Manifiesto de audios pregrabados (GENERADO por
    \`npm run voice:generate\`; no editar a mano).
 
@@ -409,7 +415,8 @@ async function main() {
 
   console.log(
     `\nListo: ${present.length}/${lines.length} frases con audio ` +
-      `(${skipped} ya existían, ${sizeKB(bytes)} nuevos) · proveedor ${PROVIDER} · voz ${val("voice", "por defecto")}`
+      `(${skipped} ya existían, ${sizeKB(bytes)} nuevos) · proveedor ${PROVIDER} · voz ${val("voice", DEFAULT_VOICE)} ` +
+      `· rate ${RATE} · pitch ${PITCH}`
   );
   if (present.length < lines.length) {
     console.log(

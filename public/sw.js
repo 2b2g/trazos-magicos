@@ -4,8 +4,11 @@
 
    v4: los MP3 se regeneraron con otra voz (Paulina) conservando los
    nombres, así que la caché v3 guardaba audio viejo con 200 OK. Subir
-   la versión purga las cachés anteriores en `activate`. */
-var CACHE = "garabati-v4";
+   la versión purga las cachés anteriores en `activate`.
+
+   v5: los mismos MP3 se regrabaron con otro tono (pitch 1.06), así que
+   la caché v4 seguía sirviendo el audio anterior. */
+var CACHE = "garabati-v5";
 var CORE = [
   "./",
   "./index.html",
