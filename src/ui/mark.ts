@@ -11,9 +11,12 @@
       `ui/categories.ts`. No es chrome ni contenido: es la **señal** de
       en qué fase está el niño, y tiene que verse desde el otro lado de
       la habitación y sin saber leer. Por eso lleva su propia paleta en
-      vez de heredar el color del botón, y por eso no usa ni una letra:
-      la app entera está sin texto, así que la ficha enseña la categoría
-      con un dibujo (un cuaderno, tres manzanas), no con un rótulo.
+      vez de heredar el color del botón, y por eso no lleva **rótulo**:
+      la ficha enseña la categoría con un dibujo, no escribiéndola. Las
+      dos últimas llevan sus glifos (A B C y 1 2 3) porque son la pista
+      visual de qué hay detrás de la pestaña, y van **trazados**, nunca
+      tipografiados: un `<text>` dependería de la fuente del sistema, que
+      es justo lo que aquí no se puede permitir.
 
    Así el niño ve el mismo dibujo en una tableta de 2014 y en un portátil
    de 2026, y el chrome no depende de la fuente del sistema. */
