@@ -5,7 +5,38 @@ comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTIN
 
 ## [Sin publicar]
 
+### Corregido
+- **Las fichas de «letras» y «números» no eran las del diseño de referencia.**
+  0.10.0 las había hecho como un cuaderno con lápiz y tres manzanas, con el
+  argumento de que «en la app no hay texto». El argumento confundía dos cosas:
+  «sin letras» era **sin títulos** —«LETRAS» y «NÚMEROS» escritos debajo—, no
+  sin glifos. La referencia lleva **A B C** y **1 2 3**, y son justo la pista
+  visual de qué hay detrás de la pestaña, que es lo que una ficha tiene que
+  decir antes de saber leer.
+- **El test de geometría no veía el grosor del trazo.** Medía los puntos del
+  `d` y nada más, así que el halo blanco de las letras —que engorda tres
+  unidades— podía salirse de la ficha de color y entrar en la esquina
+  redondeada sin que lo detectara nadie: la C llegaba a 30,75 y la ficha acaba
+  en 30,5. Ahora los puntos se miden con el `stroke-width` ya sumado, y hay un
+  test que comprueba que el dibujo cabe dentro de la ficha **con las esquinas
+  redondeadas**.
+- **El parser de paths del test tomaba los flags de arco por coordenadas.**
+  En `A rx ry giro laf sf x y` anotaba `rx`, `ry` y los dos flags como si
+  fueran puntos. No se notaba porque daba `(0, 1)`, que dentro de la rejilla
+  parece inocuo; al sumar el grosor ya salía fuera.
+
 ### Añadido
+- **A B C y 1 2 3 trazados en las dos fichas** (`ui/categories.ts`): cada
+  glifo es una lista de puntos que se dibuja dos veces, en blanco y más gordo
+  (el halo de la referencia) y luego en su color. Las dos pasadas van
+  separadas para que el halo de una letra no se coma el color de la de al
+  lado. Las curvas salen de un `arco()` y **nada se escala con
+  `transform`**: el test solo sabe aplicar un `rotate`, así que un `scale`
+  se le escaparía. El escalonado (A abajo-izquierda, B arriba-centro, C
+  abajo-derecha) es lo que evita que a 24 px sean «tres rayas parecidas».
+- **Un test más de invariantes de diseño**: cada glifo de «letras» y
+  «números» va trazado (`fill: none` + `stroke`) y con su halo, dos unidades
+  más gordo. 111 tests.
 - **Integración continua en GitHub Actions** (`.github/workflows/ci.yml`):
   typecheck, tests y build en **cada push y cada pull request**. Con 109 tests
   y un build de dos etapas, el riesgo era que la suite pasara porque nadie se
@@ -18,7 +49,9 @@ comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTIN
 - `.github/` entra en `.dockerignore`: la imagen de producción no necesita los
   workflows, y el contexto de `docker build` se queda en lo mínimo.
 
-> Sin cambios en el juego: ni un byte del bundle cambia con esto.
+> El bundle sube 0,74 kB (35,16 → 35,35 kB gzip) y sigue sin depender de
+> ninguna fuente del sistema: las letras son vectores, no tipografía.
+> La CI, por su parte, no toca el juego: ni un byte del bundle cambia con ella.
 
 ## [0.10.0] — 2026-10-02 · Las categorías del mapa, con ficha y sin letras
 
@@ -52,7 +85,11 @@ comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTIN
 - **`tests/categorias.test.ts` — 11 tests** sobre las fichas. La suite pasa de
   **98 a 109 tests**.
 
-### Sin glifos, a propósito
+### Sin glifos, a propósito — **decisión corregida después**
+> ⚠️ Corregido en [Sin publicar]: «sin letras» era **sin títulos**, no sin
+> glifos. LETRAS y NÚMEROS llevan ya **A B C** y **1 2 3** trazados. Se
+> conserva el texto original porque el changelog es un registro.
+
 El diseño de referencia de LETRAS usa **A B C** y el de NÚMEROS **1 2 3**, pero
 **la app entera está sin texto**, así que un icono con una «A» dentro le pide
 al niño algo que todavía no sabe. Las dos fichas hablan de lo que va a

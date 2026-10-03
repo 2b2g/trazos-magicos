@@ -362,7 +362,7 @@ invierte (verde = avanzar, coral = atrás).
 - Sin publicidad, sin compras, sin dark patterns; el único control de
   adultos está tras la puerta de 3 s.
 
-### 13.1b Las categorías del mapa, con ficha y sin letras (0.10.0)
+### 13.1b Las categorías del mapa: ficha de color y glifos (0.10.0)
 
 Las cuatro fases del mapa eran **emoji de texto** (✏️ 🔷 🔤 🔢) y se habían
 quedado fuera de 0.9.0 a propósito, con el argumento de que «Android 5 sí los
@@ -374,21 +374,46 @@ de cada pestaña, y esas cuatro fichas son justo lo que tiene que distinguir
 
 Ahora cada fase es una **ficha de color** (`ui/categories.ts`), dibujada a
 partir del diseño de referencia de las cuatro, reproducido **con el estilo del
-juego** (colores planos, sin degradados ni brillos) y **sin ninguna letra ni
-número**:
+juego** (colores planos, sin degradados ni brillos):
 
-| Fase | Ficha | Lo que dice, sin texto |
+| Fase | Ficha | Lo que dice |
 |---|---|---|
 | A · Primeros trazos | 🔵 azul | el lazo discontinuo (el trazo sin levantar el dedo) y el lápiz que lo dibuja |
 | B · Formas y patrones | 🟢 verde | círculo, estrella y triángulo: los tres motivos de sus nodos |
-| C · El Abecedario Mágico | 🟣 morado | un cuaderno abierto con el lápiz escribiendo |
-| D · Los Números Mágicos | 🟠 naranja | tres manzanas: tres de verdad, y se cuentan con el dedo |
+| C · El Abecedario Mágico | 🟣 morado | **A B C**, cada una en un color |
+| D · Los Números Mágicos | 🟠 naranja | **1 2 3**, con el mismo escalonado |
 
-Las dos últimas son las que cambian de verdad. El diseño de referencia usaba
-**A B C** y **1 2 3**, pero la app entera está sin texto: un icono con una «A»
-dentro le pide al niño algo que todavía no sabe. Por eso **LETRAS** dice lo que
-va a **hacer** (escribir) y **NÚMEROS** dice lo que va a **contar**, sin que
-ninguno de los dos iconos contenga un glifo.
+Las dos últimas llevan sus glifos, como en el diseño de referencia. Conviene no
+confundir dos cosas: «sin letras» era **sin títulos** —«LETRAS» y «NÚMEROS»
+escritos debajo—, no sin glifos. «A B C» y «1 2 3» son parte del dibujo y la
+pista visual de qué hay detrás de cada pestaña.
+
+#### Cómo van los glifos: trazados, no tipografiados
+
+Cada letra y cada cifra es una lista de **trazos** (listas de puntos de la
+rejilla de 32) que se dibujan dos veces: primero **en blanco y más gordo** (el
+halo de la referencia, `grosor + 2,4`) y luego **en su color**. Las dos
+pasadas van separadas —todos los halos, y después todos los glifos— para que
+el halo de una letra no se coma el color de la de al lado.
+
+Lo que **no** hay es un elemento `<text>`, y por una razón que no es de gusto:
+un `<text>` sale en la tipografía del sistema y en un dispositivo que no la
+tiene sale un **cuadrado vacío**. El juego no puede depender de lo que tenga
+instalado quien lo abre. Las seis letras van trazadas con `path` porque así se
+ven iguales en todas partes.
+
+Las curvas (la C, las panzas de la B, la cabeza del 2 y las dos del 3) salen de
+un `arco(cx, cy, rx, ry, a0, a1, n)` que devuelve puntos: una circunferencia no
+cabe en un `path` corto sin engordar el bundle. Y **nada se escala con
+`transform`**: cada glifo se construye con una función que recibe su caja
+`(x, y, alto)` y devuelve puntos ya en coordenadas, porque el test que
+comprueba que el dibujo no se sale de la ficha solo sabe aplicar un `rotate`, y
+un `scale` o un `translate` se le escaparían sin avisar.
+
+El escalonado (A abajo-izquierda, B arriba-centro, C abajo-derecha, y lo mismo
+en 1 2 3) no es decorativo: en una fila de tres glifos del mismo tamaño y a la
+misma altura, a 24 px el niño vería «tres rayas Parecidas» en vez de tres
+letras.
 
 #### Por qué las fichas van aparte de `icons.ts`
 
@@ -472,7 +497,7 @@ Los botones de chrome **no llevan texto**: solo el icono, con el nombre en el
 |---|---|
 | `ui/icons.ts` | **22 iconos** de chrome como **datos** (`IconShape[]` de `path`/`circle`/`rect`), rejilla de 24, trazo 2.4 con remates redondos. `iconEl(name, class)` construye el `<svg>` con `createElementNS`. **7 kB / 2,8 kB gzip, 0 dependencias.** |
 | `ui/artwork.ts` | **17 ilustraciones** de contenido con `{viewBox, paths:[{fill, d}]}`, generadas desde los SVG de **Fluent Emoji Flat** (Microsoft, MIT) por `scripts/build-artwork.mjs`. **31 kB / 9,2 kB gzip.** |
-| `ui/categories.ts` | **4 fichas de categoría** (`trazos`, `figuras`, `letras`, `numeros`) en la rejilla de 32, cada una con su color. `categoryEl(id, class)`. Ver §13.1b. **0 dependencias.** |
+| `ui/categories.ts` | **4 fichas de categoría** (`trazos`, `figuras`, `letras`, `numeros`) en la rejilla de 32, cada una con su color. «letras» y «números» llevan **A B C** y **1 2 3 trazados**, con halo blanco, nunca `<text>`. `categoryEl(id, class)`. Ver §13.1b. **0 dependencias.** |
 | `ui/mark.ts` | La regla única de "una marca": `markEl(valor)` devuelve el vector si hay arte y un `<span>` de texto si no. `isVectorArt()` para consultar el modo. Reexporta `iconEl` y `categoryEl`. |
 
 #### Por qué **no** una librería de iconos

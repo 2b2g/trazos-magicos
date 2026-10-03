@@ -28,7 +28,7 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 ```bash
 npm install
 npm run dev        # desarrollo → http://localhost:5173
-npm test           # 109 tests unitarios (motor, storage, mascota, marca, voz, primer gesto, recompensa, fidelidad, iconos, categorías)
+npm test           # 111 tests unitarios (motor, storage, mascota, marca, voz, primer gesto, recompensa, fidelidad, iconos, categorías)
 npm run typecheck  # solo tipos (tsc --noEmit)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
@@ -119,11 +119,13 @@ incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
   significados de letras) están igualmente vectorizados. La app no depende de
   la tipografía del sistema para entenderse. Ver
   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §13.1.
-- **Las categorías se distinguen sin texto y sin saber leer**: las cuatro fases
+- **Las categorías se distinguen sin saber leer**: las cuatro fases
   del mapa son **fichas de color** (un lazo con lápiz, círculo-estrella-
-  triángulo, un cuaderno y tres manzanas), cada una con su propio color. Antes
+  triángulo, **A B C** y **1 2 3**), cada una con su propio color. Antes
   eran cuatro emoji, y dos de ellos (🔤 y 🔷) eran el mismo dibujo: un cuadrado
-  azul. Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §13.1b.
+  azul. Las letras y las cifras van **trazadas** (`path`), nunca tipografiadas:
+  un `<text>` sale en la fuente del sistema y en un dispositivo que no la tiene
+  sale un cuadrado vacío. Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §13.1b.
 - **Letras y números fieles al trazo**: las 27 mayúsculas y los 10 dígitos se
   construyen sobre una **caja de escritura común** (misma ceja, misma base) y
   llevan **pauta de 4 líneas** detrás, como el cuaderno de escritura infantil.

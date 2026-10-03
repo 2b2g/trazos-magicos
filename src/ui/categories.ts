@@ -14,11 +14,19 @@
 
    Cómo se han diseñado: a partir del diseño de referencia de las
    cuatro fichas, reproducido **con el estilo del juego** (colores
-   planos, sin degradados ni brillos) y **sin ninguna letra ni número**:
-   en la app no hay texto, así que un icono con una «A» dentro le
-   pediría al niño saber algo que todavía no sabe. Por eso LETRAS es
-   un cuaderno con lápiz (escribir) y NÚMEROS son tres manzanas (contar
-   sin leer la cifra).
+   planos, sin degradados ni brillos). Las cuatro fichas llevan el
+   dibujo que anuncia la fase: el lazo y el lápiz en «trazos», las tres
+   formas en «figuras», **A B C** en «letras» y **1 2 3** en «números»,
+   cada glifo en un color distinto y con el halo blanco del diseño.
+
+   Sobre las letras y las cifras: «sin letras» era sin **títulos**
+   («LETRAS», «NÚMEROS» escritos debajo), no sin glifos. «A B C» y
+   «1 2 3» sí son parte del dibujo, y además son la pista visual de
+   qué hay detrás de la pestaña. La regla técnica que sí se mantiene es
+   otra: **nada de `<text>`**. Las letras van dibujadas como `path`
+   trazados, no tipografiadas, porque un `<text>` sale en la tipografía
+   del sistema —o en un cuadrado vacío si esa fuente no está— y el
+   juego no puede depender de lo que tenga instalado el dispositivo.
 
    Estilo: rejilla de 32, fichas de 29 con el borde de 1,8 (el grosor
    del trazo de la app) y figuras rellenas de color plano. El contorno
@@ -26,12 +34,18 @@
    que redondea las puntas de la estrella y del triángulo sin tener que
    escribir un path con curvas.
 
-   Un detalle que costó un rato: el lápiz y el cuaderno se dibujan
-   **horizontales** y se giran con `rotate(ángulo centro)`. Por eso el
-   centro de giro va en la propia figura (`tf`) y no como dato suelto:
-   composing dos transformaciones seguidas (`rotate(...) translate(...)`)
-   gira también la traslación, y el lápiz se va de la ficha sin que
-   ningún error lo delate.
+   Un detalle que costó un rato: el lápiz se dibuja **horizontal** y se
+   gira con `rotate(ángulo centro)`. Por eso el centro de giro va en la
+   propia figura (`tf`) y no como dato suelto: composing dos
+   transformaciones seguidas (`rotate(...) translate(...)`) gira también
+   la traslación, y el lápiz se va de la ficha sin que ningún error lo
+   delate.
+
+   Y el otro: los glifos **no se escalan con `transform`**. Se construyen
+   con una función que recibe la caja (x, y, alto) y devuelve puntos ya
+   en coordenadas de la rejilla, porque el test que comprueba que las
+   figuras no se salen de la ficha solo sabe aplicar un `rotate`, y un
+   `scale` o un `translate` se le escaparían sin avisar.
 
    Los nodos se crean con `createElementNS` y cada figura se escribe
    como dato (nada de `innerHTML` en SVG: Safari 9 lo ignora), así que
@@ -113,6 +127,115 @@ function lapiz(tf: string, largo: number, medio: number): CatShape[] {
   ];
 }
 
+/* --- los glifos de «letras» y «números» ---------------------------------
+   Cada letra y cada cifra es una lista de trazos, y cada trazo una lista
+   de puntos de la rejilla de 32. Se dibujan **trazados** (`fill: none` +
+   `stroke` de punta y unión redondas), que es lo que da el trazo grueso
+   del diseño, y por debajo, **el mismo trazo en blanco y más gordo**:
+   ese es el halo blanco de la referencia, que es lo que separa la letra
+   del fondo de color. Las dos pasadas van separadas (todos los halos,
+   luego todas las letras) para que el halo de una letra no se coma el
+   color de la que tiene al lado. */
+
+/** Un trazo: puntos `[x, y]` de la rejilla de 32. */
+type Trazo = number[][];
+
+/** El `d` de un trazo: `M` y `L` sobre puntos ya redondeados. */
+function dDe(trazo: Trazo): string {
+  var d = "";
+  for (var i = 0; i < trazo.length; i++) {
+    d += (i === 0 ? "M" : "L") + r2(trazo[i][0]) + " " + r2(trazo[i][1]);
+  }
+  return d;
+}
+
+/** Puntos de un arco elíptico, de `a0` a `a1` radianes. Es lo que
+    dibuja las curvas de la B, la C, el 2 y el 3: una circunferencia no
+    cabe en un path corto sin engordar el bundle. */
+function arco(cx: number, cy: number, rx: number, ry: number, a0: number, a1: number, n: number): Trazo {
+  var p: Trazo = [];
+  for (var i = 0; i <= n; i++) {
+    var a = a0 + ((a1 - a0) * i) / n;
+    p.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]);
+  }
+  return p;
+}
+
+/** Las dos pasadas de un glifo: halo blanco y letra de color. */
+function glifo(trazos: Trazo[], color: string, grosor: number): CatShape[] {
+  var out: CatShape[] = [];
+  for (var pasada = 0; pasada < 2; pasada++) {
+    for (var i = 0; i < trazos.length; i++) {
+      out.push({
+        t: "path",
+        d: dDe(trazos[i]),
+        fill: "none",
+        stroke: pasada === 0 ? "#ffffff" : color,
+        sw: pasada === 0 ? grosor + 2.4 : grosor,
+      });
+    }
+  }
+  return out;
+}
+
+/** Los seis glifos, cada uno en su caja. `y` es el borde superior y `h`
+    la altura de caja (de A a Z): la anchura sale de la altura, como en
+    la tipografía. */
+function glifoA(x: number, y: number, h: number): Trazo[] {
+  var w = h * 0.92;
+  return [
+    [[x + w * 0.06, y + h], [x + w * 0.5, y], [x + w * 0.94, y + h]],
+    [[x + w * 0.22, y + h * 0.69], [x + w * 0.78, y + h * 0.69]],
+  ];
+}
+
+function glifoB(x: number, y: number, h: number): Trazo[] {
+  var w = h * 0.8;
+  return [
+    [[x + w * 0.13, y], [x + w * 0.13, y + h]],
+    arco(x + w * 0.13, y + h * 0.25, w * 0.8, h * 0.25, -Math.PI / 2, Math.PI / 2, 10),
+    arco(x + w * 0.13, y + h * 0.75, w * 0.92, h * 0.25, -Math.PI / 2, Math.PI / 2, 10),
+  ];
+}
+
+function glifoC(x: number, y: number, h: number): Trazo[] {
+  var w = h * 0.86;
+  return [arco(x + w * 0.48, y + h * 0.5, w * 0.48, h * 0.48, 0.82, Math.PI * 2 - 0.82, 18)];
+}
+
+/** El 1 del juego lleva palito y base (ver `lettersPhaseC`), así que
+    aquí también: es el mismo glifo que el niño va a trazar. */
+function glifo1(x: number, y: number, h: number): Trazo[] {
+  var w = h * 0.68;
+  return [
+    [[x + w * 0.24, y + h * 0.2], [x + w * 0.52, y]],
+    [[x + w * 0.52, y], [x + w * 0.52, y + h]],
+    [[x + w * 0.06, y + h], [x + w * 0.94, y + h]],
+  ];
+}
+
+function glifo2(x: number, y: number, h: number): Trazo[] {
+  var w = h * 0.86;
+  var cabeza = arco(x + w * 0.48, y + h * 0.27, w * 0.44, h * 0.27, Math.PI, Math.PI * 2 + 0.55, 14);
+  var punta = cabeza[cabeza.length - 1];
+  return [
+    cabeza,
+    /* De la punta del arco, la bajada a la izquierda y la base, en un
+       solo trazo: es el ángulo del pie del 2. La base se queda corta a
+       propósito —si llega hasta el borde derecho se pasa por debajo
+       del 3 y la ficha se lee «12 3» en vez de «1 2 3». */
+    [punta, [x + w * 0.12, y + h * 0.93], [x + w * 0.78, y + h * 0.93]],
+  ];
+}
+
+function glifo3(x: number, y: number, h: number): Trazo[] {
+  var w = h * 0.9;
+  return [
+    arco(x + w * 0.24, y + h * 0.25, w * 0.7, h * 0.25, -Math.PI / 2, Math.PI / 2, 10),
+    arco(x + w * 0.24, y + h * 0.75, w * 0.78, h * 0.25, -Math.PI / 2, Math.PI / 2, 10),
+  ];
+}
+
 /** Cada categoría es una lista de figuras sobre la rejilla de 32×32. */
 export var CATEGORIES: Record<string, CatShape[]> = {
   /* TRAZOS — azul: el lazo discontinuo que hay que hacer sin levantar el
@@ -150,45 +273,24 @@ export var CATEGORIES: Record<string, CatShape[]> = {
     { t: "path", d: "M16.3 15.6 12 27.2 20.6 27.2Z", fill: "#2f95e8", stroke: "#2f95e8", sw: 2.6 },
   ],
 
-  /* LETRAS — morado: un cuaderno abierto con el lápiz escribiendo en él.
-     Sin «A», sin «B», sin «C»: el niño del perfil aún no lee, así que la
-     ficha habla de lo que **va a hacer** (escribir), no de lo que va a
-     ver. */
-  letras: [ficha("#9b4fd4", "#6a2a9e")].concat(
-    [
-      // las dos hojas, abiertas por el lomo del centro
-      { t: "path", d: "M3.6 15.2C7.8 12.9 12.6 13.4 15.6 16v11.4c-3-2.6-7.8-2.1-12-0.6Z", fill: "#ffffff" },
-      { t: "path", d: "M28.4 15.2c-4.2-2.3-9-1.8-12 0.8v11.4c3-2.6 7.8-2.1 12-0.6Z", fill: "#ffffff" },
-      // lomo y canto de las hojas, en morado oscuro
-      { t: "path", d: "M15.6 16v11.4l1-0.8V16.8Z", fill: "#5d2688" },
-      { t: "path", d: "M3.6 26.8c4.2-1.5 9-1.5 12 0.2 3-1.7 7.8-1.7 12-0.2v1.3c-4.2-1.5-9-1.5-12 0.2-3-1.7-7.8-1.7-12 0.2Z", fill: "#5d2688" },
-    ],
-    // el lápiz, atravesando el cuaderno en diagonal
-    lapiz("rotate(-38 12.5 16)", 8, 2.1)
-  ),
+  /* LETRAS — morado: A, B y C, cada una en un color, escalonadas como en
+     la referencia (A abajo a la izquierda, B arriba en el centro, C abajo
+     a la derecha). El escalonado no es decorativo: en una fila de tres
+     glifos del mismo tamaño y a la misma altura, a 24 px el niño vería
+     «tres rayas Parecidas» en vez de tres letras. */
+  letras: [ficha("#9b4fd4", "#6a2a9e")]
+    .concat(glifo(glifoA(5.6, 14.4, 10.4), "#ffc53d", 3.1))
+    .concat(glifo(glifoB(12.0, 4.4, 10.4), "#3aa0e8", 3.1))
+    .concat(glifo(glifoC(17.8, 14.6, 10.4), "#7ec62e", 3.1)),
 
-  /* NÚMEROS — naranja: tres manzanas. La fase cuenta hasta el 9, pero
-     una ficha con «1 2 3» dentro es una cifra que el niño todavía no
-     sabe leer; tres manzanas son tres de verdad, y se pueden contar con
-     el dedo. */
-  numeros: [ficha("#ff9a1f", "#c96a00")].concat(
-    manzana(16.2, 11.6, 4.6),
-    manzana(9.8, 22.6, 4.6),
-    manzana(22.6, 22.6, 4.6)
-  ),
+  /* NÚMEROS — naranja: 1, 2 y 3, con el mismo escalonado y los mismos
+     colores que las letras, para que se lean como la misma serie. El 1
+     lleva palito y base porque el del juego los lleva. */
+  numeros: [ficha("#ff9a1f", "#c96a00")]
+    .concat(glifo(glifo1(5.2, 10.6, 13.8), "#3aa0e8", 3.1))
+    .concat(glifo(glifo2(13.0, 4.4, 10.2), "#7ec62e", 3.1))
+    .concat(glifo(glifo3(16.8, 15.4, 10.4), "#a86ee0", 3.1)),
 };
-
-/** Una manzana: cuerpo, rabito y hoja. Se usa tres veces, así que vive
-    en una función en vez de repetida: cada figura se dibuja, no se
-    referencia con `<use>`, que no es fiable en los navegadores viejos. */
-function manzana(cx: number, cy: number, r: number): CatShape[] {
-  return [
-    { t: "path", d: "M" + cx + " " + r2(cy - r + 0.6) + "v-2.8h1.6v2.8Z", fill: "#7a4a2b" },
-    { t: "circle", cx: r2(cx + 1.9), cy: r2(cy - r - 1.6), r: 1.5, fill: "#3f9c2f" },
-    { t: "circle", cx: cx, cy: cy, r: r, fill: "#ef3f3f" },
-    { t: "circle", cx: r2(cx - r * 0.34), cy: r2(cy - r * 0.36), r: r2(r * 0.26), fill: "#ff8a80" },
-  ];
-}
 
 /** Nombre de todas las categorías (para tests y documentación). */
 export var CATEGORY_NAMES: string[] = ["trazos", "figuras", "letras", "numeros"];

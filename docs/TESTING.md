@@ -10,7 +10,7 @@
 | **E2E sintético** | navegador + eventos Pointer sintéticos (`preview_evaluate`) | flujo completo real: perfiles → mapa → demo → trazado → recompensa → progreso |
 | **Checklist de dispositivo** | manual (README) | Android 5 WebView real, iPad, gama baja, offline, rechazo de palma |
 
-## 2. Suite unitaria (109 tests, todos en verde)
+## 2. Suite unitaria (111 tests, todos en verde)
 
 - `tests/engine.test.ts` — muestreo (extremos exactos, continuidad de la O,
   espaciado uniforme), evaluador (trazo perfecto, temblor infantil, trazo
@@ -37,18 +37,23 @@
 - `tests/brand.test.ts` — **coherencia del renombrado a Garabati**: manifest
   PWA, `<title>`, `package.json`, imagen Docker, caché del service worker y
   ausencia del nombre anterior en las pantallas.
-- `tests/categorias.test.ts` — **las cuatro fichas del mapa** (11 tests,
+- `tests/categorias.test.ts` — **las cuatro fichas del mapa** (13 tests,
   0.10.0): cada ficha con figuras y relleno, `CATEGORY_NAMES` sincronizado con
   las claves, las cuatro categorías que el mapa necesita, **las cuatro fases
   apuntan a una ficha que existe** y **ya no llevan `emoji`**, **ninguna
-  ficha dibuja texto** (ni `<text>` ni `innerHTML` en el archivo), **cada
-  categoría con su propio color** (si dos compartieran fondo, el niño las
+  ficha usa `<text>` ni `innerHTML`** (las letras van trazadas, porque una
+  `<text>` sale en la fuente del sistema y sin ella sale un cuadrado vacío),
+  **cada categoría con su propio color** (si dos compartieran fondo, el niño las
   confundiría: por encima del dibujo, la señal es el color), **flags de arco
   sin decimales**, **todos los comandos con sus argumentos** (contando, que es
-  lo único que delata dos números pegados) y **las figuras dentro de la ficha
+  lo único que delata dos números pegados), **las figuras dentro de la ficha
   con la rotación aplicada** —incluida la caja del radio de los arcos, que se
-  curvan *entre* sus extremos—. Los cinco fallos se comprobaron
-  **reintroduciendo el bug a mano**.
+  curvan *entre* sus extremos—, **con el grosor del trazo ya sumado** (sin eso,
+  el halo blanco de una letra se salía de la ficha sin que nadie lo viera) y
+  **dentro de la ficha de color, esquinas redondeadas incluidas**. Además,
+  **cada glifo de «letras» y «números» va trazado y con su halo** de dos
+  unidades más gordo, que es lo que los hace legibles sobre el color. Todos
+  los fallos se comprobaron **reintroduciendo el bug a mano**.
 - `tests/voice.test.ts` — **integridad de la voz pregrabada**: ids
   deterministas y seguros como nombre de fichero, catálogo de frases sin
   duplicados, manifiesto que solo anuncia MP3 existentes, **cero frases sin
@@ -185,7 +190,7 @@ ejecuta **en cada push y en cada pull request**.
 | Paso | Comando | Qué atrapa |
 |---|---|---|
 | Typecheck | `npm run typecheck` | tipos rotos antes de perder tiempo en los tests |
-| Tests | `npm test` | los 109 tests unitarios de la §2 |
+| Tests | `npm test` | los 111 tests unitarios de la §2 |
 | Build | `npm run build` | un `vite build` que revienta, o un chunk que ya no compila |
 
 Detalles que importan:

@@ -88,18 +88,33 @@ function rota(s: CatShape, x: number, y: number): number[] {
 }
 
 /**
- * Los puntos que la figura toca de verdad, ya rotados.
+ * Los puntos que la figura toca de verdad, ya rotados **y con el
+ * grosor del trazo**.
  *
  * Solo se anotan los puntos de control y el punto final de cada
- * comando: en una curva o un arco están en la cara exterior o en la
+ * comando: en una curva o un arco están en la cara exterior o en el
  * interior del trazo, pero ninguno de los dos se sale más allá que
  * ellos, así que para «¿cabe dentro de la ficha?» bastan.
+ *
+ * El grosor importa desde que las letras y las cifras son trazos con
+ * halo blanco: el `d` de la C llegaba hasta 28,2 de 32 y parecía
+ * entrar, pero su halo —tres unidades de radio— se salía por la
+ * derecha y el test no lo veía, porque solo miraba los puntos. Por eso
+ * cada punto se separa la mitad del `stroke-width` en las dos
+ * direcciones.
  */
 function puntosDe(s: CatShape): number[] {
   var pts: number[] = [];
+  var medio = (s.sw || 0) / 2;
   function anota(x: number, y: number): void {
     var p = rota(s, x, y);
-    pts.push(p[0], p[1]);
+    if (medio === 0) {
+      pts.push(p[0], p[1]);
+      return;
+    }
+    // el trazo engorda hacia los cuatro lados, no solo hacia el final
+    pts.push(p[0] - medio, p[1] - medio);
+    pts.push(p[0] + medio, p[1] + medio);
   }
 
   if (s.t === "circle") {
@@ -143,10 +158,21 @@ function puntosDe(s: CatShape): number[] {
       var k = cmd.a.length - 2;
       px = minus ? x + cmd.a[k] : cmd.a[k];
       py = minus ? y + cmd.a[k + 1] : cmd.a[k + 1];
-      // los puntos de control intermedios también los toca el trazo
-      for (var c = 0; c + 1 < cmd.a.length; c += 2) {
-        if (low === "a" && c >= 4) break; // rx, ry y giro no son puntos
-        anota(minus ? x + cmd.a[c] : cmd.a[c], minus ? y + cmd.a[c + 1] : cmd.a[c + 1]);
+      /* Los puntos de control intermedios también los toca el trazo,
+         pero en un arco los argumentos NO son coordenadas: son
+         `rx ry giro laf sf x y`, y solo los dos últimos lo son. El
+         bucle se salta el arco entero, que se mide con su extremo y
+         su caja de radio, más abajo.
+
+         Anotar `rx`, `ry` y los dos flags como si fueran puntos era
+         un error del propio test que el grosor del trazo ha
+         destapado: daba (0, 1) en el lazo de «trazos», y con el
+         halo la figura se salía por la izquierda cuando el dibujo
+         estaba perfectamente dentro. */
+      if (low !== "a") {
+        for (var c = 0; c + 1 < cmd.a.length; c += 2) {
+          anota(minus ? x + cmd.a[c] : cmd.a[c], minus ? y + cmd.a[c + 1] : cmd.a[c + 1]);
+        }
       }
       if (low === "a") {
         /* El arco se curva **entre** sus extremos, así que marcando solo
@@ -176,6 +202,34 @@ function puntosDe(s: CatShape): number[] {
     }
   }
   return pts;
+}
+
+/* La ficha de color: un rectángulo de 29 con las esquinas muy
+   redondeadas. El dibujo tiene que caber **dentro de ella**, no solo
+   dentro de la rejilla de 32: el halo blanco de las letras se salía
+   hasta 30,75 y la ficha acaba en 30,5, así que el blanco se comía
+   el borde y entraba en la esquina redondeada sin que el test de la
+   rejilla (que tolerate hasta 32,5) dijera nada. */
+const FICHA = { x: 1.5, y: 1.5, w: 29, h: 29, rx: 7.6 };
+
+/** ¿Cae el punto dentro de la ficha de color, esquinas redondeadas
+    incluidas? Zona central: basta con estar en el rectángulo. Esquina:
+    el punto tiene que caer dentro del círculo de radio `rx`. */
+function dentroDeFicha(x: number, y: number): boolean {
+  var x2 = FICHA.x + FICHA.w;
+  var y2 = FICHA.y + FICHA.h;
+  if (x < FICHA.x || x > x2 || y < FICHA.y || y > y2) return false;
+  var izq = FICHA.x + FICHA.rx;
+  var der = x2 - FICHA.rx;
+  var arr = FICHA.y + FICHA.rx;
+  var aba = y2 - FICHA.rx;
+  if (x >= izq && x <= der) return true;
+  if (y >= arr && y <= aba) return true;
+  var cx = x < izq ? izq : der;
+  var cy = y < arr ? arr : aba;
+  var dx = x - cx;
+  var dy = y - cy;
+  return dx * dx + dy * dy <= FICHA.rx * FICHA.rx;
 }
 
 describe("fichas de categoría (ui/categorias.ts)", () => {
@@ -222,13 +276,22 @@ describe("fichas de categoría (ui/categorias.ts)", () => {
     }
   });
 
-  it("ninguna ficha dibuja texto: ni <text> ni innerHTML", () => {
-    /* La regla «sin letras» no se puede comprobar mirando el dibujo (una
-       «A» hecha a mano y un cuaderno son los dos un `path`), pero sí se
-       puede comprobar la vía por la que entraría una letra: un elemento
-       `<text>`, que es además lo que se rompe en un dispositivo sin la
-       fuente. `innerHTML` tampoco, por el motivo de siempre: Safari 9
-       lo ignora dentro de un SVG. */
+  it("ninguna ficha usa <text> ni innerHTML: las letras van dibujadas", () => {
+    /* Las fichas **sí** llevan letras y cifras dibujadas —A B C y
+       1 2 3 son parte del dibujo y la pista de qué hay detrás de cada
+       pestaña—, así que la regla ya no es «sin letras» sino «sin
+       tipografía».
+
+       Y hay una razón técnica de peso: un `<text>` sale en la fuente
+       del sistema, y en un dispositivo sin esa fuente sale un cuadrado
+       vacío. El juego no puede depender de lo que tenga instalado
+       quien lo abre (ver `ui/icons.ts`). Por eso las seis letras van
+       trazadas con `path`: se ven igual en todas partes.
+
+       Lo que no se puede comprobar mirando el dibujo (una «A» a mano y
+       una de tipografía son las dos figuras del SVG) sí se comprueba
+       por la vía: que en el módulo no haya un `createElementNS` de
+       texto ni un `innerHTML`, que Safari 9 ignora dentro de un SVG. */
     var fuente = readFileSync("src/ui/categories.ts", "utf8");
     // fuera los comentarios: aquí se explica que no hay texto, y el
     // propio comentario contiene la palabra
@@ -303,10 +366,13 @@ describe("fichas de categoría (ui/categorias.ts)", () => {
     }
   });
 
-  it("las figuras no se salen de la ficha (con la rotación aplicada)", () => {
+  it("las figuras no se salen de la ficha (con la rotación y el grosor aplicados)", () => {
     /* El borde de la ficha llega hasta 31,4 de 32 (el rectángulo acaba
        en 30,5 y su trazo de 1,8 sobresale medio punto por lado), así
-       que el límite es la propia rejilla con medio punto de margen. */
+       que el límite es la propia rejilla con medio punto de margen.
+       Las figuras se miden con su `stroke-width` ya sumado, que es lo
+       que hacía falta para que el halo blanco de las letras y las
+       cifras no pudiera salirse sin que nadie se enterase. */
     for (var id of Object.keys(CATEGORIES)) {
       var figuras = CATEGORIES[id];
       for (var i = 0; i < figuras.length; i++) {
@@ -320,6 +386,75 @@ describe("fichas de categoría (ui/categorias.ts)", () => {
           expect(pts[p + 1], donde + " se sale por abajo").toBeLessThanOrEqual(CAT_SIZE + 0.5);
           expect(pts[p + 1], donde + " se sale por arriba").toBeGreaterThanOrEqual(-0.5);
         }
+      }
+    }
+  });
+
+  it("el dibujo cabe dentro de la ficha de color, esquinas incluidas", () => {
+    /* La primera figura ES la ficha (el rectángulo de color), así que
+       lo que se comprueba es el resto: que ninguna figura, halo
+       incluido, se salga del cuadrado ni se meta en la esquina
+       redondeada. Sin esto, el halo blanco de una letra puede comerse
+       el borde de la ficha y seguir pareciendo «dentro» a simple
+       vista. */
+    for (var id of Object.keys(CATEGORIES)) {
+      var figuras = CATEGORIES[id];
+      for (var i = 1; i < figuras.length; i++) {
+        var pts = puntosDe(figuras[i]);
+        for (var p = 0; p < pts.length; p += 2) {
+          expect(
+            dentroDeFicha(pts[p], pts[p + 1]),
+            id + " figura " + i + ": (" + pts[p].toFixed(2) + ", " + pts[p + 1].toFixed(2) +
+              ") se sale de la ficha de color"
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("cada glifo de letras y números va trazado y con su halo", () => {
+    /* Las seis letras y cifras del diseño de referencia —A B C y
+       1 2 3— son las que le dicen al niño qué hay detrás de la
+       pestaña. Dos cosas tienen que cumplirse y ninguna se ve
+       mirando la pantalla:
+
+       1. **Van trazadas, no rellenas ni tipografiadas.** Un glifo es un
+          `path` con `fill: none` y un `stroke` de color: es lo que da
+          el trazo grueso del diseño, y es además lo que lo hace
+          independiente de las fuentes del dispositivo.
+       2. **Cada una tiene su halo blanco**, el mismo `d` con más
+          grosor. El halo es lo que las separa del fondo de color y lo
+          que las separa entre sí, así que un glifo sin halo no es el
+          mismo dibujo: es otro dibujo. */
+    for (var id of ["letras", "numeros"]) {
+      var figuras = CATEGORIES[id].slice(1); // sin la ficha de fondo
+      var glifos = figuras.filter(function (f) { return f.fill === "none" && f.stroke === "#ffffff"; });
+      expect(glifos.length, id + ": halos").toBeGreaterThanOrEqual(6);
+
+      for (var i = 0; i < figuras.length; i++) {
+        var f = figuras[i];
+        if (f.stroke === "#ffffff") continue; // es un halo, ya comprobado
+        expect(f.fill, id + " figura " + i + ": el glifo va trazado").toBe("none");
+        expect(typeof f.stroke, id + " figura " + i + ": el glifo va de color").toBe("string");
+
+        var gemelos = figuras.filter(function (o) { return o.d === f.d && o.stroke === "#ffffff"; });
+        expect(
+          gemelos.length,
+          id + " figura " + i + ": este glifo se ha quedado sin halo"
+        ).toBeGreaterThan(0);
+        expect(
+          gemelos[0].sw as number,
+          id + " figura " + i + ": el halo tiene que ser más gordo que la letra"
+        ).toBeGreaterThan(f.sw as number);
+        /* Y de verdad de sobra, no «un pelo»: con el halo apenas un
+           poco más gordo los glifos se limpian pero siguen siendo legibles
+           sobre el color, y eso no lo cazaría el test de que no se salen
+           de la ficha (un trazo más fino no se sale nunca). Dos unidades
+           es lo que separa una letra y la de al lado en el diseño. */
+        expect(
+          (gemelos[0].sw as number) - (f.sw as number),
+          id + " figura " + i + ": el halo es demasiado fino"
+        ).toBeGreaterThanOrEqual(2);
       }
     }
   });
