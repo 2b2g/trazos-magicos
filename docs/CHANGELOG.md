@@ -3,6 +3,23 @@
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
 
+## [Sin publicar]
+
+### Añadido
+- **Integración continua en GitHub Actions** (`.github/workflows/ci.yml`):
+  typecheck, tests y build en **cada push y cada pull request**. Con 109 tests
+  y un build de dos etapas, el riesgo era que la suite pasara porque nadie se
+  acordaba de ejecutarla. Node 20 (la del `Dockerfile`), `npm ci` desde el
+  lockfile, `permissions: contents: read` y cancelación de la ejecución
+  anterior cuando llega un push nuevo. El log termina con el **tamaño del
+  bundle** en crudo y gzip (informativo, no bloquea), porque el peso es una
+  restricción del proyecto y hasta ahora solo se comparaba a mano. Nuevo
+  script `npm run typecheck`.
+- `.github/` entra en `.dockerignore`: la imagen de producción no necesita los
+  workflows, y el contexto de `docker build` se queda en lo mínimo.
+
+> Sin cambios en el juego: ni un byte del bundle cambia con esto.
+
 ## [0.10.0] — 2026-10-02 · Las categorías del mapa, con ficha y sin letras
 
 ### Corregido

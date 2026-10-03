@@ -176,3 +176,32 @@ ev('pointerup', r.left+r.width*0.5, r.top+r.height*0.84);
 
 Ver checklist completo en el README: Android 5 real, iPad Safari, gama baja,
 modo avión/PWA, rechazo de palma física, TTS del sistema.
+
+## 7. Integración continua (`.github/workflows/ci.yml`)
+
+Los tres pasos de arriba no se quedan en «acuérdate de ejecutarlos»: GitHub los
+ejecuta **en cada push y en cada pull request**.
+
+| Paso | Comando | Qué atrapa |
+|---|---|---|
+| Typecheck | `npm run typecheck` | tipos rotos antes de perder tiempo en los tests |
+| Tests | `npm test` | los 109 tests unitarios de la §2 |
+| Build | `npm run build` | un `vite build` que revienta, o un chunk que ya no compila |
+
+Detalles que importan:
+
+- **Node 20**, la misma versión del `FROM node:20-alpine` del `Dockerfile`: si
+  la imagen de producción cambia de versión, el workflow cambia con ella.
+- **`npm ci`, no `npm install`**: se instala desde el lockfile, así que CI no
+  puede pasar con unas dependencias que en local no existen.
+- **Concurrencia con cancelación**: un push nuevo mata la ejecución anterior
+  del mismo ref; nadie espera al build de un commit que ya ha quedado obsoleto.
+- **`permissions: contents: read`**: el workflow no escribe nada en el repo.
+- **Paso informativo de tamaño del bundle**: imprime el peso de cada `.js`/`.css`
+  de `dist/` en crudo y gzip. **No falla el job**; existe para que una
+  regresión de peso se note en el log. Sus cifras salen un pelín por debajo de
+  las que imprime `vite` (que mide el chunk antes de escribir el fichero
+  final), así que se comparan contra las del changelog, no entre sí.
+
+Lo que **no** cubre, y sigue siendo manual: la batería E2E de la §3 (necesita
+navegador) y el checklist de dispositivo de la §6.

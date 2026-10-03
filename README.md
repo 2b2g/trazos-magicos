@@ -1,5 +1,7 @@
 # Garabati ✏️
 
+[![CI](https://github.com/2b2g/trazos-magicos/actions/workflows/ci.yml/badge.svg)](https://github.com/2b2g/trazos-magicos/actions/workflows/ci.yml)
+
 Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial** para niños de 3 a 6 años. Implementación del FDD v2.0 (MVP Fases A–D).
 
 > **Grande, brillante, redondo, sonoro, con caras, un solo camino, feedback
@@ -27,9 +29,19 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 npm install
 npm run dev        # desarrollo → http://localhost:5173
 npm test           # 109 tests unitarios (motor, storage, mascota, marca, voz, primer gesto, recompensa, fidelidad, iconos, categorías)
+npm run typecheck  # solo tipos (tsc --noEmit)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
 ```
+
+### Integración continua
+
+Cada push y cada pull request ejecutan en GitHub Actions los mismos tres
+pasos, en orden: **typecheck → tests → build**
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml), Node 20 igual que el
+`Dockerfile`). Un push nuevo cancela la ejecución anterior del mismo ref, y el
+log termina con el tamaño del bundle para que una regresión de peso se vea
+sin tener que compararla a mano.
 
 ### Voz
 

@@ -1,0 +1,82 @@
+# ============================================================
+# Garabati — integración continua
+# Tres comprobaciones, en este orden y cada una en su paso:
+#   1. typecheck  → los tipos compilan (src/ y tests/)
+#   2. tests      → los 109 tests de vitest
+#   3. build      → el bundle ES5 + legacy se genera sin errores
+# El orden importa: lo más barato que puede fallar, primero.
+# ============================================================
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# El workflow solo lee: no necesita escribir nada en el repo.
+permissions:
+  contents: read
+
+# Un push nuevo cancela la ejecución anterior del mismo ref:
+# nobody espera al build de un commit que ya ha cambiado.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Typecheck, tests y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Repositorio
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          # 20 = la versión del `FROM node:20-alpine` del Dockerfile.
+          # Si la imagen de producción usa otra, se cambia aquí también.
+          node-version: "20"
+          cache: npm
+
+      - name: Dependencias (lockfile, sin npm install)
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      # Ojo: `npm run build` ya ejecuta `tsc --noEmit` antes de vite.
+      # Se deja tal cual porque es lo que el Dockerfile lanza; el typecheck
+      # de arriba está para fallar antes y con un mensaje claro.
+      - name: Build
+        run: npm run build
+
+      # Informativo: no falla el job. Sirve para que una regresión de peso
+      # se vea en el log. Las cifras salen un pelín por debajo de las que
+      # imprime vite (éste mide el chunk antes de escribir el fichero final),
+      # así que hay que compararlas con las del changelog, no entre sí.
+      - name: Tamaño del bundle (informativo)
+        run: |
+          node --input-type=module -e '
+          import { readdirSync, readFileSync } from "node:fs";
+          import { gzipSync } from "node:zlib";
+          const raices = [];
+          (function baja(dir) {
+            for (const e of readdirSync(dir, { withFileTypes: true })) {
+              const p = dir + "/" + e.name;
+              if (e.isDirectory()) baja(p);
+              else if (/\.(js|css)$/.test(e.name)) raices.push(p);
+            }
+          })("dist");
+          for (const f of raices.sort()) {
+            const buf = readFileSync(f);
+            const kb = (n) => (n / 1024).toFixed(2).padStart(8) + " kB";
+            console.log(f.replace("dist/", "") + "\t" + kb(buf.length) + "\t" + kb(gzipSync(buf).length) + " gzip");
+          }
+          '
