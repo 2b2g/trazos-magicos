@@ -362,6 +362,85 @@ invierte (verde = avanzar, coral = atrás).
 - Sin publicidad, sin compras, sin dark patterns; el único control de
   adultos está tras la puerta de 3 s.
 
+### 13.1b Las categorías del mapa, con ficha y sin letras (0.10.0)
+
+Las cuatro fases del mapa eran **emoji de texto** (✏️ 🔷 🔤 🔢) y se habían
+quedado fuera de 0.9.0 a propósito, con el argumento de que «Android 5 sí los
+tiene». El argumento era cierto y estaba equivocado por el motivo que
+importa: 🔤 (el abecedario) y 🔷 (el diamante) son **el mismo tipo de dibujo**,
+un cuadrado azul. El niño no tenía forma de saber qué iba a encontrar detrás
+de cada pestaña, y esas cuatro fichas son justo lo que tiene que distinguir
+**antes de saber leer**.
+
+Ahora cada fase es una **ficha de color** (`ui/categories.ts`), dibujada a
+partir del diseño de referencia de las cuatro, reproducido **con el estilo del
+juego** (colores planos, sin degradados ni brillos) y **sin ninguna letra ni
+número**:
+
+| Fase | Ficha | Lo que dice, sin texto |
+|---|---|---|
+| A · Primeros trazos | 🔵 azul | el lazo discontinuo (el trazo sin levantar el dedo) y el lápiz que lo dibuja |
+| B · Formas y patrones | 🟢 verde | círculo, estrella y triángulo: los tres motivos de sus nodos |
+| C · El Abecedario Mágico | 🟣 morado | un cuaderno abierto con el lápiz escribiendo |
+| D · Los Números Mágicos | 🟠 naranja | tres manzanas: tres de verdad, y se cuentan con el dedo |
+
+Las dos últimas son las que cambian de verdad. El diseño de referencia usaba
+**A B C** y **1 2 3**, pero la app entera está sin texto: un icono con una «A»
+dentro le pide al niño algo que todavía no sabe. Por eso **LETRAS** dice lo que
+va a **hacer** (escribir) y **NÚMEROS** dice lo que va a **contar**, sin que
+ninguno de los dos iconos contenga un glifo.
+
+#### Por qué las fichas van aparte de `icons.ts`
+
+| | `ui/icons.ts` | `ui/categories.ts` |
+|---|---|---|
+| Qué es | chrome: botón, píldora, HUD | la señal de en qué fase está el niño |
+| Color | **uno**, heredado del botón (`currentColor`) | **propio**: cuatro fondos distintos |
+| Rejilla | 24, trazo 2,4 | 32, relleno plano, borde 1,8 |
+| Se ve | en un botón, mezclado con texto | a 12vmin, desde el otro lado de la habitación |
+
+No es chrome ni contenido: es la **señal**, y por eso lleva su propia paleta en
+vez de heredar el color del botón. `ui/mark.ts` documenta las tres reglas
+—chrome, contenido, categoría— y reexporta `categoryEl` junto a `iconEl`.
+
+#### La pestaña **es** la ficha
+
+El botón de la pestaña va **transparente** (`.btn--tile`): la categoría la dice
+el color y el pictograma, así que un fondo blanco o morado detrás solo ponía un
+rectángulo de otro color dentro de la ficha. Lo que marca la fase activa es el
+tamaño (×1,14) y la misma sombra de fondo que llevan los demás botones de la
+app. La ficha pasó de **6,4vmin** (el emoji que sustituye) a **12vmin**: es lo
+que el niño tiene que distinguir de un vistazo, y es el elemento más grande de
+la fila. El nombre de la fase, que antes vivía en el emoji, se queda en el
+`aria-label`.
+
+#### Los `d` de las fichas, y por qué se parsean en el test
+
+Los lápices y el cuaderno se dibujan **horizontales** y se giran con
+`rotate(ángulo centro)`, que es una sola `transform` por figura. Un detalle que
+costó un rato: componer dos transformaciones seguidas
+(`rotate(...) translate(...)`) **gira también la traslación**, y el lápiz se
+iba de la ficha sin que ningún error lo delatara. Por eso el centro de giro va
+en la propia figura (`tf`) y no como dato suelto.
+
+`tests/categorias.test.ts` (11 tests) comprueba, además de lo obvio, dos cosas
+que en `artwork.ts` ya habían mordido:
+
+- **Las figuras no se salen de la ficha, con la rotación aplicada.** Es el test
+  que habría cazado el lápiz volado. Y marca también la **caja del radio** de
+  los arcos: el arco se curva *entre* sus extremos, así que con solo mirar el
+  punto final un `A 14 14` pasaba por estar dentro y se salía por arriba.
+- **Todos los comandos se llevan sus argumentos.** Se comprueba **contando** los
+  argumentos de cada comando, que es lo único que delata dos números pegados
+  (`17.6` + `6.0` → `17.66`). El test que hace esto en `artwork.ts` mira la
+  forma del texto con `\d\.\d+\d`, que en realidad marca **cualquier** número
+  de dos decimales: pasa porque aquel dato tiene un solo decimal, no porque
+  detecte nada.
+
+El coste es **+3,14 kB sin comprimir / +0,94 kB gzip** (101,80 kB / 35,16 kB
+gzip). Los MP3 de la voz no cambian, así que el service worker se queda en
+`garabati-v6` (los assets llevan hash).
+
 ### 13.1 Iconografía: emoji fuera del chrome (0.9.0)
 
 Hasta 0.8.1 los botones, las píldoras del HUD y los interruptores se dibujaban
@@ -382,6 +461,7 @@ letra, los avatares, los objetos que se cuentan). La regla que se aplicó:
 | Chrome | botón, píldora del HUD, interruptor | emoji | **SVG** de `ui/icons.ts` |
 | Contenido | "A de Avión", avatares, objetos contables | emoji | ilustración SVG de `ui/artwork.ts` |
 | Contenido antiguo | 🍎 🐶 🐱 🐮 … (Unicode ≤ 6) | emoji | **se queda**: la fuente sí lo tiene y no hay ganancia |
+| **Categorías** | **las cuatro pestañas de fase** | **emoji (✏️ 🔷 🔤 🔢)** | **ficha de color** de `ui/categories.ts` — ver §13.1b, en 0.10.0 |
 
 Los botones de chrome **no llevan texto**: solo el icono, con el nombre en el
 `aria-label` (`.btn--only`). El niño no lee, el botón se toca.
@@ -392,7 +472,8 @@ Los botones de chrome **no llevan texto**: solo el icono, con el nombre en el
 |---|---|
 | `ui/icons.ts` | **22 iconos** de chrome como **datos** (`IconShape[]` de `path`/`circle`/`rect`), rejilla de 24, trazo 2.4 con remates redondos. `iconEl(name, class)` construye el `<svg>` con `createElementNS`. **7 kB / 2,8 kB gzip, 0 dependencias.** |
 | `ui/artwork.ts` | **17 ilustraciones** de contenido con `{viewBox, paths:[{fill, d}]}`, generadas desde los SVG de **Fluent Emoji Flat** (Microsoft, MIT) por `scripts/build-artwork.mjs`. **31 kB / 9,2 kB gzip.** |
-| `ui/mark.ts` | La regla única de "una marca": `markEl(valor)` devuelve el vector si hay arte y un `<span>` de texto si no. `isVectorArt()` para consultar el modo. |
+| `ui/categories.ts` | **4 fichas de categoría** (`trazos`, `figuras`, `letras`, `numeros`) en la rejilla de 32, cada una con su color. `categoryEl(id, class)`. Ver §13.1b. **0 dependencias.** |
+| `ui/mark.ts` | La regla única de "una marca": `markEl(valor)` devuelve el vector si hay arte y un `<span>` de texto si no. `isVectorArt()` para consultar el modo. Reexporta `iconEl` y `categoryEl`. |
 
 #### Por qué **no** una librería de iconos
 

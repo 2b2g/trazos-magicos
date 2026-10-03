@@ -407,6 +407,20 @@ body {
   line-height: 1;
 }
 
+/* Fichas de categoría (`ui/categories.ts`): los cuatro iconos del mapa.
+   A diferencia de `.icon` (trazo de un solo color que hereda del
+   botón) y de `.art` (el dibujo de un emoji), la ficha lleva **su
+   propio color**: es el que dice «aquí se trazan, aquí se cuentan»,
+   así que no puede depender del color del botón. Por eso el SVG se
+   pinta con colores planos y la ficha entera se dibuja en la
+   rejilla de 32 (`ui/categories.ts`). */
+.cat {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 /* Estrellas y marcas de color */
 .icon--gold {
   color: #ffc42e;
@@ -848,6 +862,47 @@ body {
 }
 
 .phase-tabs > * { margin: 6px; }
+
+/* La pestaña de fase **es** la ficha de categoría (`ui/categories.ts`).
+   El botón va transparente a propósito: la categoría la dice el color y
+   el pictograma de la ficha, así que un fondo blanco o morado detrás
+   solo ponía un rectángulo de otro color dentro de la ficha. Lo que
+   marca la fase activa es el tamaño y la misma sombra de fondo que
+   llevan los demás botones de la app.
+
+   Antes ocupaba 6,4vmin (el emoji de la pestaña); ahora la ficha es el
+   elemento más grande de la fila, porque es lo que el niño tiene que
+   distinguir de un vistazo. */
+.btn--tile {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  /* 24% = el radio de la ficha (7,6 de 32) en pourcentage, para que la
+     sombra de la fase activa siga su silueta y no salga una barra gris
+     rectangular debajo. */
+  border-radius: 24%;
+  background: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+
+.btn--tile .cat {
+  width: 12vmin;
+  height: 12vmin;
+  -webkit-transition: -webkit-transform 0.18s ease-out;
+  transition: transform 0.18s ease-out;
+}
+
+.btn--tile.btn--on .cat {
+  -webkit-transform: scale(1.14);
+  transform: scale(1.14);
+}
+
+.btn--tile.btn--on {
+  -webkit-box-shadow: 0 8px 0 rgba(0, 0, 0, 0.22);
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.22);
+}
 
 /* ---------- actividad ---------- */
 
@@ -1547,6 +1602,7 @@ body {
   .btn--sm { min-width: 58px; min-height: 50px; font-size: 12px; border-radius: 18px; padding: 4px 8px; }
   .btn--sm .btn__emoji { font-size: 18px; }
   .phase-tabs > * { margin: 3px; }
+  .btn--tile .cat { width: 13.5vmin; height: 13.5vmin; }
   .btn--big { min-width: 116px; min-height: 82px; font-size: 19px; }
   .btn--big .btn__emoji { font-size: 34px; }
   .btn--icon { min-width: 54px; min-height: 54px; padding: 4px; }

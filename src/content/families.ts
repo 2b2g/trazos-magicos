@@ -21,13 +21,17 @@ export const FAMILIES: Record<string, FamilyInfo> = {
 export interface PhaseInfo {
   id: "A" | "B" | "C" | "D";
   name: string;
-  emoji: string;
+  /** Clave de la ficha de categoría (`ui/categories.ts`): el dibujo que
+      el niño ve en la pestaña del mapa. Antes era un emoji (✏️ 🔷 🔤 🔢),
+      pero 🔤 y 🔷 son el mismo tipo de dibujo y no decían nada de la
+      fase; la ficha lleva su propio color y su propio pictograma. */
+  cat: string;
   subtitle: string;
 }
 
 export const PHASES: PhaseInfo[] = [
-  { id: "A", name: "Primeros trazos", emoji: "✏️", subtitle: "Líneas, curvas, ondas y zigzag" },
-  { id: "B", name: "Formas y patrones", emoji: "🔷", subtitle: "Cruces, colinas, casitas y estrellas" },
-  { id: "C", name: "El Abecedario Mágico", emoji: "🔤", subtitle: "Mayúsculas de la A a la Ñ" },
-  { id: "D", name: "Los Números Mágicos", emoji: "🔢", subtitle: "Del 0 al 9 contando estrellas" },
+  { id: "A", name: "Primeros trazos", cat: "trazos", subtitle: "Líneas, curvas, ondas y zigzag" },
+  { id: "B", name: "Formas y patrones", cat: "figuras", subtitle: "Cruces, colinas, casitas y estrellas" },
+  { id: "C", name: "El Abecedario Mágico", cat: "letras", subtitle: "Mayúsculas de la A a la Ñ" },
+  { id: "D", name: "Los Números Mágicos", cat: "numeros", subtitle: "Del 0 al 9 contando estrellas" },
 ];

@@ -26,7 +26,7 @@ Videojuego web educativo de **grafomotricidad, preescritura y escritura inicial*
 ```bash
 npm install
 npm run dev        # desarrollo → http://localhost:5173
-npm test           # 98 tests unitarios (motor, storage, mascota, marca, voz, primer gesto, recompensa, fidelidad, iconos)
+npm test           # 109 tests unitarios (motor, storage, mascota, marca, voz, primer gesto, recompensa, fidelidad, iconos, categorías)
 npm run build      # build de producción (ES5 legacy + PWA)
 npm run preview    # servir dist/
 ```
@@ -68,7 +68,8 @@ src/
 │   └── brand.ts           identidad (nombre, mascota, lema) en un solo sitio
 ├── screens/           perfiles, mapa, actividad (bucle completo), ajustes
 ├── ui/                Lapi la mascota (CSS con cara), decoración del cielo,
-│                      icons.ts (22 iconos SVG), artwork.ts (17 dibujos), mark.ts
+│                      icons.ts (22 iconos SVG), artwork.ts (17 dibujos),
+│                      categories.ts (4 fichas de categoría), mark.ts
 ├── services/          audio (TTS configurable + SFX WebAudio), storage multi-perfil
 ├── util/dom.ts        helpers DOM ES5 · util/fx.ts confeti y estrellas
 └── main.ts            orquestador + service worker
@@ -106,6 +107,11 @@ incluida en `public/fonts/OFL.txt`) para que el juego funcione sin red.
   significados de letras) están igualmente vectorizados. La app no depende de
   la tipografía del sistema para entenderse. Ver
   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §13.1.
+- **Las categorías se distinguen sin texto y sin saber leer**: las cuatro fases
+  del mapa son **fichas de color** (un lazo con lápiz, círculo-estrella-
+  triángulo, un cuaderno y tres manzanas), cada una con su propio color. Antes
+  eran cuatro emoji, y dos de ellos (🔤 y 🔷) eran el mismo dibujo: un cuadrado
+  azul. Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §13.1b.
 - **Letras y números fieles al trazo**: las 27 mayúsculas y los 10 dígitos se
   construyen sobre una **caja de escritura común** (misma ceja, misma base) y
   llevan **pauta de 4 líneas** detrás, como el cuaderno de escritura infantil.

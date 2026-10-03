@@ -10,7 +10,7 @@
 | **E2E sintético** | navegador + eventos Pointer sintéticos (`preview_evaluate`) | flujo completo real: perfiles → mapa → demo → trazado → recompensa → progreso |
 | **Checklist de dispositivo** | manual (README) | Android 5 WebView real, iPad, gama baja, offline, rechazo de palma |
 
-## 2. Suite unitaria (98 tests, todos en verde)
+## 2. Suite unitaria (109 tests, todos en verde)
 
 - `tests/engine.test.ts` — muestreo (extremos exactos, continuidad de la O,
   espaciado uniforme), evaluador (trazo perfecto, temblor infantil, trazo
@@ -37,6 +37,18 @@
 - `tests/brand.test.ts` — **coherencia del renombrado a Garabati**: manifest
   PWA, `<title>`, `package.json`, imagen Docker, caché del service worker y
   ausencia del nombre anterior en las pantallas.
+- `tests/categorias.test.ts` — **las cuatro fichas del mapa** (11 tests,
+  0.10.0): cada ficha con figuras y relleno, `CATEGORY_NAMES` sincronizado con
+  las claves, las cuatro categorías que el mapa necesita, **las cuatro fases
+  apuntan a una ficha que existe** y **ya no llevan `emoji`**, **ninguna
+  ficha dibuja texto** (ni `<text>` ni `innerHTML` en el archivo), **cada
+  categoría con su propio color** (si dos compartieran fondo, el niño las
+  confundiría: por encima del dibujo, la señal es el color), **flags de arco
+  sin decimales**, **todos los comandos con sus argumentos** (contando, que es
+  lo único que delata dos números pegados) y **las figuras dentro de la ficha
+  con la rotación aplicada** —incluida la caja del radio de los arcos, que se
+  curvan *entre* sus extremos—. Los cinco fallos se comprobaron
+  **reintroduciendo el bug a mano**.
 - `tests/voice.test.ts` — **integridad de la voz pregrabada**: ids
   deterministas y seguros como nombre de fichero, catálogo de frases sin
   duplicados, manifiesto que solo anuncia MP3 existentes, **cero frases sin
@@ -89,6 +101,13 @@
   la versión de Node). Ese último es el que atrapa el 🧊 o el 🤖 que alguien
   meta mañana y que en un Android 5 saldría como un cuadrado vacío.
 
+  Una salvedad sobre el test de **números pegados** de este archivo: mira la
+  forma del texto con `\d\.\d+\d`, que en realidad marca **cualquier** número de
+  dos decimales (`10.72` encaja). Pasa porque el arte de Fluent viene a un
+  decimal, no porque detecte los números pegados. El test de las fichas
+  (`tests/categorias.test.ts`) lo hace bien, **contando los argumentos de cada
+  comando**, que es lo único que delata un token de más o de menos.
+
 ## 3. Batería E2E en navegador (sesión de prueba intensiva)
 
 Ejecutada con Chromium (preview) sobre el bundle de producción, simulando el
@@ -121,6 +140,8 @@ dedo con PointerEvents sintéticos y leyendo localStorage como oráculo.
 | 23 | **Iconografía de las cuatro pantallas**: perfiles (avatar vector, botón ➕ → `plus`, estrella vector, *Volver* y *¡Listo!* sin texto), mapa (pestañas de fase solo con marca, candados y estrellas vector, 💤 → `sleep`, casa/sonido/ajustes vector), actividad (recompensa con `markEl`, 3 estrellas `starFilled`, *"4 ⭐"* como `.phrase--count`, *Otra vez* y *Seguir jugando* sin texto) y ajustes (título con `grown`, llave sin texto, 6 filas con 1 icono cada una). **Cero emoji de U+1F900+ a la vista** | ✅ (0.9.0) |
 | 24 | **El SVG se construye sin `innerHTML`**: los nodos salen de `createElementNS` y el `slow` (tortuga) se lee a 64 px — la primera versión en trazo se fundía en un borrón y se rehizo en relleno | ✅ (0.9.0) |
 | 25 | **Los 17 dibujos de contenido, completos**: cada ilustración a 128 px (hoja de diseño), 64 px (avatar del perfil) y 40 px (pestaña de fase). Los 8 avatares en fila, los 6 significados de letras y los 3 post-MVP. Comprobado con `getBBox()` que ninguna figura está aplastada (todas ocupan 24–28 de las 32 unidades de su caja) | ✅ (0.9.0) |
+| 26 | **Las cuatro fichas de categoría en el mapa**: fila de cuatro fichas de color (azul, verde, morado, naranja) sobre el fondo de cielo, sin el rectángulo blanco de antes; la activa ×1,14 con su sombra. Se juzgan a 128 / 64 / 40 / 24 px (hoja `.design/categorias.html`) y en el mapa real a 900×1180, 1024×768 y 740×420 (móvil en horizontal). **Ninguna se sale de su ficha** y los cuatro colores se distinguen de un vistazo | ✅ (0.10.0) |
+| 27 | **Cambio de fase**: al tocar otra ficha, la rejilla de nodos cambia a la de esa fase (p. ej. NÚMEROS muestra 0, 1, 2), la marca `btn--on` salta a la ficha tocada y el nombre de la fase sigue en el `aria-label` (lo que anuncia un lector de pantalla) | ✅ (0.10.0) |
 
 ## 4. Hallazgos y correcciones de la batería
 

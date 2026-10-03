@@ -3,6 +3,75 @@
 Formato inspirado en [Keep a Changelog]. Documento vivo: **cada cambio de
 comportamiento añadido aquí y reflejado en `docs/ARCHITECTURE.md`/`docs/TESTING.md`.**
 
+## [0.10.0] — 2026-10-02 · Las categorías del mapa, con ficha y sin letras
+
+### Corregido
+- **Las cuatro pestañas de fase no decían nada de su fase.** Eran emoji de
+  texto (✏️ 🔷 🔤 🔢) que 0.9.0 dejó fuera del cambio de iconos con el
+  argumento de que «Android 5 sí los tiene». Era cierto y estaba equivocado por
+  el motivo que importa: **🔤 (el abecedario) y 🔷 (el diamante) son el mismo
+  tipo de dibujo** — un cuadrado azul — así que el niño no tenía forma de saber
+  qué iba a encontrar detrás de cada pestaña, y eso es justo lo que tiene que
+  distinguir **antes de saber leer**.
+- **El nombre de la fase vivía en el emoji.** Al sustituirlo por un dibujo, el
+  nombre pasó al `aria-label` del botón (`.btn--only`), que es lo que leen los
+  lectores de pantalla y lo que un adulto lee si lo inspecciona.
+
+### Añadido
+- **`src/ui/categories.ts` — las cuatro fichas de categoría** (`trazos`,
+  `figuras`, `letras`, `numeros`), dibujadas a partir del diseño de referencia
+  de las cuatro fichas y reproducidas **con el estilo del juego** (colores
+  planos, sin degradados ni brillos). Cada una lleva **su propio color** —
+  es el que dice «aquí se trazan» o «aquí se cuentan»—, así que a diferencia de
+  `ui/icons.ts` no heredan el color del botón: van en la rejilla de **32**,
+  con relleno plano y borde de 1,8. `categoryEl(id, class)`, nodos con
+  `createElementNS` y las figuras como dato, **0 dependencias**.
+- **`src/screens/map.ts` + `.btn--tile` — la pestaña ahora *es* la ficha.** El
+  botón va transparente, porque un fondo blanco o morado detrás solo ponía un
+  rectángulo de otro color dentro de la ficha. La fase activa se marca con el
+  tamaño (×1,14) y la misma sombra de fondo que llevan los demás botones. La
+  ficha pasó de **6,4vmin** a **12vmin**: es lo que el niño tiene que
+  distinguir de un vistazo, y es el elemento más grande de la fila.
+- **`tests/categorias.test.ts` — 11 tests** sobre las fichas. La suite pasa de
+  **98 a 109 tests**.
+
+### Sin glifos, a propósito
+El diseño de referencia de LETRAS usa **A B C** y el de NÚMEROS **1 2 3**, pero
+**la app entera está sin texto**, así que un icono con una «A» dentro le pide
+al niño algo que todavía no sabe. Las dos fichas hablan de lo que va a
+**hacer**, no de lo que va a ver: **LETRAS** es un cuaderno abierto con el lápiz
+escribiendo, y **NÚMEROS** son tres manzanas — tres de verdad, y se cuentan con
+el dedo. En **FIGURAS** y **TRAZOS** el diseño de referencia ya era pictórico
+(círculo/estrella/triángulo, y el lazo con el lápiz) y se ha replicado tal cual.
+
+### Cambiado
+- **`PhaseInfo.emoji` → `PhaseInfo.cat`** en `src/content/families.ts`: la clave
+  pasa a ser la de la ficha. Un test comprueba que `emoji` no vuelve a
+  aparecer en las fases.
+- `ui/mark.ts` documenta ahora **tres** reglas (chrome, contenido, categoría) y
+  reexporta `categoryEl` junto a `iconEl`.
+
+### Detalle que costó un rato
+Los lápices y el cuaderno se dibujan **horizontales** y se giran con
+`rotate(ángulo centro)`, una sola `transform` por figura. Componer dos
+transformaciones seguidas (`rotate(...) translate(...)`) **gira también la
+traslación**: el lápiz se iba de la ficha **sin dar ningún error**. Por eso el
+centro de giro va en la propia figura (`tf`) y no como dato suelto, y por eso
+el test de que las figuras no se salen **aplica la rotación** en vez de mirar
+las coordenadas crudas.
+
+Ese test marca además la **caja del radio** de los arcos, porque el arco se
+curva *entre* sus extremos: con solo mirar el punto final, un `A 14 14` pasaba
+por estar dentro de la ficha y se salía por arriba. Los cuatro fallos se
+comprobaron **reintroduciendo el bug a mano** (números pegados, arco con radio
+enorme, lápiz girado fuera, dos fichas con el mismo fondo, flag de arco con
+decimales): los cinco los cazan, con el nombre de la figura y la coordenada.
+
+### Coste
+**+3,14 kB sin comprimir / +0,94 kB gzip** (101,80 kB / 35,16 kB gzip, antes
+98,66 / 34,22). Los MP3 de la voz no cambian, así que el service worker se
+queda en `garabati-v6` (los assets llevan hash).
+
 ## [0.9.0] — 2026-10-02 · Fuera los emoji: iconos SVG propios para todos los botones
 
 ### Corregido

@@ -12,7 +12,7 @@ import { ResourceDef } from "../engine/types";
 import { PHRASES } from "../content/phrases";
 import { mascotEl } from "../ui/mascot";
 import { skyDeco } from "../ui/decor";
-import { iconEl, markEl } from "../ui/mark";
+import { iconEl, markEl, categoryEl } from "../ui/mark";
 
 export interface MapDeps {
   store: ProfileStore;
@@ -70,12 +70,17 @@ export function renderMap(
   }
 
   // --- botones de fase (pestañas grandes, solo su marca)
+  /* La pestaña **es** la ficha: el botón va transparente (`.btn--tile`)
+     porque la categoría ya la dice el color del dibujo, y el fondo
+     blanco o morado de antes solo ponía un rectángulo dentro de otro.
+     El nombre de la fase, que antes vivía en el emoji, se queda en el
+     `aria-label`: es lo que lee un lector de pantalla. */
   var phaseBtns: Record<string, HTMLElement> = {};
   PHASES.forEach(function (ph) {
     var b = el("button", {
-      class: "btn btn--sm btn--white btn--only",
+      class: "btn btn--sm btn--tile",
       attrs: { "aria-label": ph.name },
-      children: [markEl(ph.emoji, "art art--tab")],
+      children: [categoryEl(ph.cat, "cat")],
       onClick: function () {
         audio.sfx.tap();
         currentPhase = ph.id;
@@ -90,7 +95,7 @@ export function renderMap(
     PHASES.forEach(function (ph) {
       var active = ph.id === currentPhase;
       phaseBtns[ph.id].className =
-        "btn btn--sm " + (active ? "btn--purple" : "btn--white");
+        "btn btn--sm btn--tile" + (active ? " btn--on" : "");
     });
   }
 
