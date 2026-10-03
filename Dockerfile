@@ -14,8 +14,9 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # fuentes y build (typecheck + vite build, genera bundle ES5 legacy)
+# --base: la app cuelga de /garabati/ tras el balancer (ver DEPLOYMENT.md §2.5)
 COPY . .
-RUN npm run build
+RUN npm run build -- --base=/garabati/
 
 # ---------- etapa 2: runtime ----------
 FROM nginx:1.27-alpine AS runtime

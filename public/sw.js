@@ -13,6 +13,12 @@
    cambiaron las frases locutadas (pistas de trazo) y hay MP3 nuevos
    y huérfanos: la caché v5 no sirve. */
 var CACHE = "garabati-v6";
+
+/* Prefijo de emplazamiento, leído de la propia URL del SW: en la raíz queda
+   "" y bajo /garabati/ queda "/garabati", así que las rutas de más abajo
+   ("/voice/", "/fonts/", "/assets/") funcionan igual en ambos casos. */
+var BASE = new URL("./", self.location).pathname.replace(/\/$/, "");
+
 var CORE = [
   "./",
   "./index.html",
@@ -54,7 +60,7 @@ self.addEventListener("fetch", function (event) {
   if (url.origin !== location.origin) return;
 
   // Voice clips and fonts: cache-first, they never change once generated.
-  if (url.pathname.indexOf("/voice/") === 0 || url.pathname.indexOf("/fonts/") === 0) {
+  if (url.pathname.indexOf(BASE + "/voice/") === 0 || url.pathname.indexOf(BASE + "/fonts/") === 0) {
     event.respondWith(
       caches.match(req).then(function (hit) {
         return hit || fetch(req).then(function (res) {
@@ -72,7 +78,7 @@ self.addEventListener("fetch", function (event) {
   }
 
   // Hashed build assets: cache-first, they are immutable.
-  if (url.pathname.indexOf("/assets/") === 0) {
+  if (url.pathname.indexOf(BASE + "/assets/") === 0) {
     event.respondWith(
       caches.match(req).then(function (hit) {
         if (hit) return hit;
